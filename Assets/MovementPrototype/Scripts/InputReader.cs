@@ -1,0 +1,85 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using System;
+using UnityEngine.UI;
+
+// Реализуем интерфейс, который сгенерировала Unity (I + имя Map + Actions)
+public class InputReader : MonoBehaviour, PlayerControls.IGameplayActions
+{
+    public Vector2 MoveInput => _moveInput;
+    private Vector2 _moveInput;
+    public Vector2 LookInput => _lookInput;
+    private Vector2 _lookInput;
+    public bool IsJumpHold { get; private set; }
+    public bool IsCrouching { get; private set; }
+    [SerializeField] private ButtonInputSwichType crouchingType = ButtonInputSwichType.Hold;
+    public bool IsSprinting { get; private set; }
+    [SerializeField] private ButtonInputSwichType sprintingInputType = ButtonInputSwichType.Hold;
+    public event Action OnJumpPerformed;
+    public event Action OnVaultingPerformed;
+    private PlayerControls _controls;
+
+    private void Awake()
+    {
+        _controls = new PlayerControls();
+
+        _controls.Gameplay.SetCallbacks(this);
+    }
+
+    private void OnEnable() => _controls.Enable();
+    private void OnDisable() => _controls.Disable();
+    private void Update()
+    {
+    }
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        _moveInput = context.ReadValue<Vector2>();
+    }
+
+    public void OnLook(InputAction.CallbackContext context)
+    {
+        _lookInput = context.ReadValue<Vector2>();
+    }
+
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.started) OnJumpPerformed?.Invoke();
+        IsJumpHold = SwichButtonInput(IsJumpHold, in context, ButtonInputSwichType.Hold);
+    }
+
+    public void OnSprint(InputAction.CallbackContext context)
+    {
+        IsSprinting = SwichButtonInput(IsSprinting, in context, sprintingInputType);
+    }
+
+    public void OnCrouch(InputAction.CallbackContext context)
+    {
+        IsCrouching = SwichButtonInput(IsCrouching, in context, crouchingType);
+    }
+    private bool SwichButtonInput(bool isActive, in InputAction.CallbackContext context, ButtonInputSwichType swichType )
+    {
+        if (context.started)
+        {
+            isActive = swichType switch
+            {
+                ButtonInputSwichType.Toggle => !isActive,
+                ButtonInputSwichType.Hold => true,
+                _ => isActive
+            };
+        }
+        else if (context.canceled)
+        {
+            isActive = swichType switch
+            {
+                ButtonInputSwichType.Hold => false,
+                _ => isActive,
+            };
+        }
+        return isActive;
+    }
+}
+public enum ButtonInputSwichType
+{
+    Toggle,
+    Hold
+}
