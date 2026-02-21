@@ -17,6 +17,7 @@ public class InputReader : MonoBehaviour, PlayerControls.IGameplayActions
     [SerializeField] private ButtonInputSwichType sprintingInputType = ButtonInputSwichType.Hold;
     public event Action OnJumpPerformed;
     public event Action OnVaultingPerformed;
+    public event Action OnTeleportCalled;
     private PlayerControls _controls;
 
     private void Awake()
@@ -55,6 +56,12 @@ public class InputReader : MonoBehaviour, PlayerControls.IGameplayActions
     public void OnCrouch(InputAction.CallbackContext context)
     {
         IsCrouching = SwichButtonInput(IsCrouching, in context, crouchingType);
+    }
+
+    public void OnTeleport(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+            OnTeleportCalled?.Invoke();
     }
     private bool SwichButtonInput(bool isActive, in InputAction.CallbackContext context, ButtonInputSwichType swichType )
     {

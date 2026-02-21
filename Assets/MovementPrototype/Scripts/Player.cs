@@ -1,6 +1,4 @@
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
@@ -14,6 +12,18 @@ public class Player : MonoBehaviour
 
         playerCharacter?.Initialize(inputReader);
         playerCamera?.Initialize(playerCharacter.GetCameraTarget());
+
+
+#if UNITY_EDITOR
+        inputReader.OnTeleportCalled += () =>
+        {
+            Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+            if (Physics.Raycast(ray, out var hit))
+            {
+                Teleport(hit.point);
+            }
+        };
+#endif
     }
 
     void Update()
@@ -26,16 +36,6 @@ public class Player : MonoBehaviour
         };
         playerCharacter?.UpdateInput(characterInput);
         playerCharacter?.UpdateBody();
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-            if(Physics.Raycast(ray, out var hit))
-            {
-                Teleport(hit.point);
-            }
-        } 
-#endif
     }
     private void LateUpdate()
     {

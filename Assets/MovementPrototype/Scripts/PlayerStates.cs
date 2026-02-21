@@ -11,11 +11,20 @@ public partial class PlayerCharacter
         {
             c = character;
         }
-        public virtual void Enter() { }
-        public virtual void Exit() { }
+        public abstract void Enter();
+        public abstract void Exit();
         public virtual void Update() { }
-        public virtual void UpdateRotation(ref Quaternion currentRotation, float deltaTime) { }
-        public virtual void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime) { }
+        public virtual void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            var forward = Vector3.ProjectOnPlane(c._requestRotation * Vector3.forward, c.motor.CharacterUp);
+
+            if (forward != Vector3.zero)
+                currentRotation = Quaternion.LookRotation(forward, c.motor.CharacterUp);
+        }
+        public virtual void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime) 
+        {
+           
+        }
         public virtual void BeforeCharacterUpdate(float deltaTime) { }
         public virtual void AfterCharacterUpdate(float deltaTime) { }
         public virtual void PostGroundingUpdate(float deltaTime) { }
@@ -23,19 +32,15 @@ public partial class PlayerCharacter
         {
             return true;
         }
-
         public virtual void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
         }
-
         public virtual void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
         }
-
         public virtual void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
         {
         }
-
         public virtual void OnDiscreteCollisionDetected(Collider hitCollider)
         {
         }
@@ -51,9 +56,14 @@ public partial class PlayerCharacter
         {
             c.SetStandDemensions();
         }
+        public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            base.UpdateRotation(ref currentRotation, deltaTime);
+        }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
-            c.EnterToAnotherStateIf(!c._isGrounded || c._requestCrouch);
+            if(!c._isGrounded || c._requestCrouch)
+            c.EnterToAnotherState();
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
@@ -61,7 +71,8 @@ public partial class PlayerCharacter
                .GetDirectionTangentToSurface(c._requestMovement, c.motor.GroundingStatus.GroundNormal)
                * c._requestMovement.magnitude;
 
-            var targetVelocity = groundedMovement * (c._isSprinting ? c.runSpeed : c.walkSpeed);
+            var targetVelocity = groundedMovement * (c._isSprinting ? 
+                Mathf.Lerp(c.walkSpeed, c.runSpeed, Mathf.Clamp01(c._inputReader.MoveInput.y)) : c.walkSpeed);
 
             currentVelocity = Vector3.Lerp(
                 currentVelocity,
@@ -84,9 +95,14 @@ public partial class PlayerCharacter
         {
             c.SetCrouchDemensions();
         }
+        public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            base.UpdateRotation(ref currentRotation, deltaTime);
+        }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
-            c.EnterToAnotherStateIf(!c._requestCrouch || !c._isGrounded);
+            if(c._canUncrouch && (!c._isCrouching || !c._isGrounded))
+                c.EnterToAnotherState();
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
@@ -101,6 +117,10 @@ public partial class PlayerCharacter
                 targetVelocity,
                 1f - Mathf.Exp(-c.speedChangeResponse * deltaTime)
                 );
+            if(!c._isGrounded)
+            {
+                currentVelocity += c.motor.CharacterUp * c.gravity * deltaTime;
+            }
         }
         public override void Exit()
         {
@@ -110,6 +130,7 @@ public partial class PlayerCharacter
     {
         private float _tempMaxStableSlopeAngle;
         private Vector3 _afterGroundHitRequestVelocity;
+        private Vector3 _tempHorizontalForce;
         public SlideState(PlayerCharacter character) : base(character)
         {
             CameraHeight = c.crouchCameraHeight;
@@ -119,7 +140,7 @@ public partial class PlayerCharacter
             c.SetCrouchDemensions();
             c._slideTimer = c.maxSlideTime;
             c._canUncrouch = false;
-            c._slideCayoteTimer = c.slideCayoteTime;
+            c.RefreshSlideCayoteTimer();
             _tempMaxStableSlopeAngle = c.motor.MaxStableSlopeAngle;
             c.motor.MaxStableSlopeAngle = 70f;
         }
@@ -133,10 +154,14 @@ public partial class PlayerCharacter
             {
                 c._slideCayoteTimer = c.motor.GroundingStatus.IsStableOnGround ? c.slideCayoteTime : 0f;
             }
-            c.EnterToAnotherStateIf(!c._canSlide);
+            if(!c._canSlide)
+                c.EnterToAnotherState();
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
+            c._slideTimer -= deltaTime;
+            c._canUncrouch = (c._slideTimer <= c.maxSlideTime - c.minSlideTime);
+
             // Add as speed
             if (c.motor.GroundingStatus.IsStableOnGround)
             {
@@ -156,8 +181,26 @@ public partial class PlayerCharacter
             }
             // Add slide gravity
             currentVelocity += c.motor.CharacterUp * (c.slideGravity * deltaTime);
-            c._slideTimer -= deltaTime;
-            c._canUncrouch = (c._slideTimer <= c.maxSlideTime - c.minSlideTime);
+
+            // Controll slide direction
+            var moveInput = c._inputReader.MoveInput;
+            if (moveInput.sqrMagnitude > 0)
+            {
+                currentVelocity -= _tempHorizontalForce;
+                var crossHorizontalDir = Vector3.Cross(c.motor.CharacterUp, currentVelocity).normalized;
+                var crossVerticalDir = c.motor.GetDirectionTangentToSurface
+                (
+                    direction: currentVelocity,
+                    surfaceNormal: c.motor.GroundingStatus.GroundNormal
+                ).normalized;
+
+                var verticalForce = (moveInput.y == -1 ? -crossVerticalDir : Vector3.zero)
+                    * c.slideControlForce;
+                var horizontalForce = crossHorizontalDir * moveInput.x * c.slideControlForce;
+                currentVelocity += horizontalForce + verticalForce;
+                _tempHorizontalForce = horizontalForce;
+            }
+
         }
         public override void AfterCharacterUpdate(float deltaTime)
         {
@@ -165,7 +208,7 @@ public partial class PlayerCharacter
         }
         public override void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
-            c._slideCayoteTimer = c.slideCayoteTime;
+            c.RefreshSlideCayoteTimer();
             var speed = c.motor.Velocity.magnitude;
             _afterGroundHitRequestVelocity = c.motor.GetDirectionTangentToSurface
                 (
@@ -177,10 +220,12 @@ public partial class PlayerCharacter
         {
             c._slideTimer = 0f;
             c.motor.MaxStableSlopeAngle = _tempMaxStableSlopeAngle;
+            _tempHorizontalForce = Vector3.zero;
         }
     }
     public class AirbornState : PlayerState
     {
+        private float _maxPlanarSpeed = 0f;
         public AirbornState(PlayerCharacter character) : base(character)
         {
             CameraHeight = character.standCameraHeight;
@@ -188,10 +233,18 @@ public partial class PlayerCharacter
         public override void Enter()
         {
             c.SetStandDemensions();
+            _maxPlanarSpeed = Mathf.Max(Vector3.ProjectOnPlane(c.motor.BaseVelocity, c.motor.CharacterUp).magnitude,
+                c._isSprinting ? c.airSpeed : c.walkSpeed);
+        }
+        public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            base.UpdateRotation(ref currentRotation, deltaTime);
         }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
-            c.EnterToAnotherStateIf(c._isGrounded);
+            if (c._isGrounded)
+                c.EnterToAnotherState();
+            c._jumpCayoteTimer -= deltaTime;
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
@@ -204,19 +257,45 @@ public partial class PlayerCharacter
                 var movementForce = planarMovement * c.airAcceleration * deltaTime;
                 var targetPlanarVelocity = currentPlanarVelocity + movementForce;
                 // Clamp vector
-                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, (c._inputReader.IsSprinting ? c.airSpeed : c.walkSpeed));
+                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, _maxPlanarSpeed);
                 // Add delta
                 currentVelocity += targetPlanarVelocity - currentPlanarVelocity;
             }
 
             if (c._requestSustainJump)
             {
-                currentVelocity += c.motor.CharacterUp * (c.gravity * deltaTime * c.sustainJumpGravity);
+                currentVelocity += c.motor.CharacterUp * (c.gravity * c.sustainJumpGravity * deltaTime);
                 c._sustainJumpTimer -= deltaTime;
             }
             else
             {
-                currentVelocity += c.motor.CharacterUp * c.gravity * deltaTime;
+                currentVelocity += c.motor.CharacterUp * (c.gravity * deltaTime);
+            }
+           
+        }
+        public override void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+        {
+            if(Mathf.Abs(Vector3.Angle(hitNormal, c.motor.CharacterUp) - 90f) < c.maxWallAngleMagnitude)
+            {
+                var angleToWall = Vector3.Angle(Vector3.ProjectOnPlane(-hitNormal, c.motor.CharacterUp), c.motor.CharacterForward);
+                //var angleVelocityToWall = Vector3.Angle(Vector3.ProjectOnPlane(-hitNormal, c.motor.CharacterUp), c.motor.Velocity);
+                if (angleToWall > c.maxWallRunAngle && angleToWall < c.maxWallRunAngle + 90 && ((1 << hitCollider.gameObject.layer) & c.wallLayers) != 0)
+                {
+                    //if (angleVelocityToWall > c.maxWallRunAngle && angleVelocityToWall < c.maxWallRunAngle + 90)
+                    {
+                        c._wallNormal = hitNormal;
+                        c.EnterState<WallRunState>();
+                    }
+                }
+                else if (angleToWall < c.maxWallRunAngle && ((1 << hitCollider.gameObject.layer) & c.grabWallLayers) != 0)
+                {
+                    c._wallNormal = hitNormal;
+                    c.EnterState<WallGrabState>();
+                    if(Vector3.Dot(c.motor.BaseVelocity, -hitNormal) > c.minSpeedToRefreshGrabTimer)
+                    {   
+                        c.RefreshWallGrab();
+                    }
+                }
             }
         }
         public override void Exit()
@@ -225,4 +304,228 @@ public partial class PlayerCharacter
         }
 
     }
+    public class WallRunState : PlayerState
+    {
+        private RaycastSensor _wallRunSensor;
+        public WallRunState(PlayerCharacter character) : base(character)
+        {
+            CameraHeight = c.standCameraHeight;
+            _wallRunSensor = new RaycastSensor(c.transform)
+                        .SetCastDirection(-c._wallNormal)
+                        .SetLayerMask(c.wallLayers)
+                        .SetCastLength(c.wallCheckDistance + c.motor.Capsule.radius)
+                        .SetOrigin(Vector3.up * (c.motor.Capsule.height * 0.5f))
+                        .SetIncludeRotation(false);
+        }
+        public override void Enter()
+        {
+            c.SetStandDemensions();
+            _wallRunSensor.SetCastDirection(-c._wallNormal);
+        }
+        public override void BeforeCharacterUpdate(float deltaTime)
+        {
+            _wallRunSensor.Cast();
+            Debug.Log("WallRunSensor: " + _wallRunSensor.HasDetectedHit);
+            if (!_wallRunSensor.HasDetectedHit)
+                c.EnterToAnotherState();
+        }
+        public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+        {
+            // 1. Находим направление вдоль стены (перпендикуляр к нормали и "верху")
+            Vector3 wallForward = Vector3.Cross(c._wallNormal, c.motor.CharacterUp);
+
+            // Выбираем направление (вперед или назад) в зависимости от ввода
+            if (Vector3.Dot(c.motor.CharacterForward, wallForward) < 0)
+                wallForward = -wallForward;
+
+            if (Vector3.Angle(wallForward, c.motor.CharacterForward) > c.maxWallRunAngle)
+            {
+                c.EnterToAnotherState();
+            }
+
+
+            // 2. Устанавливаем скорость бега
+            currentVelocity = wallForward * c.wallRunSpeed;
+
+            // 3. Липкая сила: слегка прижимаем к стене, чтобы не "отвалиться" на углах
+            currentVelocity += -c._wallNormal * 2f;
+
+            // 4. Легкая гравитация, чтобы было ощущение физики
+            //currentVelocity += c.motor.CharacterUp * c.wallRunGravity * deltaTime;
+
+            // Выход из бега: если прыгнули или коснулись настоящей земли
+            if (c._requestJump || c.motor.GroundingStatus.IsStableOnGround)
+            {
+                if (c._requestJump) // Прыжок от стены
+                {
+                    c.motor.SetPosition(c.motor.TransientPosition + c._wallNormal * 0.1f);
+                    currentVelocity += (c._wallNormal * c.wallJumpForcesRatio.x +
+                     c.motor.CharacterUp * c.wallJumpForcesRatio.y +
+                     c.motor.CharacterForward * c.wallJumpForcesRatio.z).normalized * c.wallJumpSpeed;
+                    c.RefreshSustainJump();
+                    c.EnterToAnotherState();
+                    c._requestJump = false;
+                }
+            }
+        }
+        public override void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+        {
+            if (Mathf.Abs(Vector3.Angle(hitNormal, c.motor.CharacterUp) - 90f) < c.maxWallAngleMagnitude &&
+                ((1 << hitCollider.gameObject.layer) & c.wallLayers) != 0)
+            {
+                c._wallNormal = hitNormal;
+                _wallRunSensor.SetCastDirection(-c._wallNormal);
+            }
+            else
+            {
+                c.EnterToAnotherState();
+            }
+        }
+        public override void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
+        {
+            //hitStabilityReport.IsStable = true;
+            //hitStabilityReport.LedgeGroundNormal = hitNormal;
+        }
+        public override void Exit()
+        {
+            c._wallNormal = Vector3.zero;
+        }
+    }
+    public class WallGrabState : PlayerState
+    {
+        private RaycastSensor _wallGrabSensor;
+        public WallGrabState(PlayerCharacter c) : base(c)
+        {
+            CameraHeight = c.standCameraHeight;
+            _wallGrabSensor = new RaycastSensor(c.transform)
+                    .SetCastDirection(-c._wallNormal)
+                    .SetLayerMask(c.grabWallLayers)
+                    .SetCastLength(c.wallCheckDistance + c.motor.Capsule.radius)
+                    .SetOrigin(Vector3.up * (c.motor.Capsule.height * 0.5f))
+                    .SetIncludeRotation(false);
+        }
+
+        public override void Enter()
+        {
+            c.SetStandDemensions();
+            _wallGrabSensor.SetCastDirection(-c._wallNormal);
+        }
+        public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            base.UpdateRotation(ref currentRotation, deltaTime);
+        }
+        public override void BeforeCharacterUpdate(float deltaTime)
+        {
+            _wallGrabSensor.Cast();
+            if (c._wallGrabTimer < 0 || !_wallGrabSensor.HasDetectedHit)
+                c.EnterToAnotherState();
+        }
+        public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+        {
+            c._wallGrabTimer -= deltaTime;
+            // Neutrilize velocity
+            if(!c._inputReader.IsJumpHold)
+                currentVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, deltaTime * c.speedChangeResponse);
+            currentVelocity += -c._wallNormal;
+            if (c._requestJump)
+            {
+                if (Vector3.Angle(c.motor.CharacterForward, Vector3.ProjectOnPlane(c._wallNormal, c.motor.CharacterUp)) < 90f)
+                {
+                currentVelocity = Vector3.zero;
+                currentVelocity += (c._wallNormal * c.wallJumpForcesRatio.x +
+                    c.motor.CharacterUp * c.wallJumpForcesRatio.y +
+                    c.motor.CharacterForward * c.wallJumpForcesRatio.z).normalized * c.wallJumpSpeed;
+                c.RefreshSustainJump();
+                c.EnterToAnotherState();
+                }
+                else
+                {
+                    //if angle > 90f
+                    c.RefreshSustainJump();
+                    currentVelocity += Vector3.ProjectOnPlane(c.motor.CharacterUp, c._wallNormal).normalized * c.wallJumpSpeed;
+
+                }
+            }
+        }
+        public override void Exit()
+        {
+            
+        }
+    }
+
+
+
+
+
+    //public abstract class SubState 
+    //{
+    //    public bool IsActive { get; protected set; }
+    //    protected PlayerCharacter c;
+    //    public SubState(PlayerCharacter c)
+    //    {
+    //        this.c = c;
+    //    }
+    //    public abstract void Enter();
+    //    public abstract void Exit();
+    //    public virtual void Update() { }
+    //    public virtual void UpdateRotation(ref Quaternion currentRotation, float deltaTime) { }
+    //    public virtual void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime) { }
+    //    public virtual void BeforeCharacterUpdate(float deltaTime) { }
+    //    public virtual void AfterCharacterUpdate(float deltaTime) { }
+    //    public virtual void PostGroundingUpdate(float deltaTime) { }
+    //    public virtual bool IsColliderValidForCollisions(Collider coll)
+    //    {
+    //        return true;
+    //    }
+    //    public virtual void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+    //    {
+    //    }
+    //    public virtual void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+    //    {
+    //    }
+    //    public virtual void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
+    //    {
+    //    }
+    //    public virtual void OnDiscreteCollisionDetected(Collider hitCollider)
+    //    {
+    //    }
+    //}
+
+    //public class SustainJump : SubState
+    //{
+    //    public SustainJump(PlayerCharacter c) : base(c)
+    //    {
+    //    }
+    //    public override void Enter() 
+    //    {
+    //        IsActive = true;
+    //        c._sustainJumpTimer = c.sustainJumpDuration;
+    //    }
+    //    public override void BeforeCharacterUpdate(float deltaTime)
+    //    {
+    //        if(!IsActive) return;
+
+    //        if  (c._isGrounded ||
+    //            !(c.isSustainJumpEnabled &&
+    //            !c._requestJump &&
+    //            c._inputReader.IsJumpHold &&
+    //            c._sustainJumpTimer > 0f)
+    //            )
+    //        {
+    //            Exit();
+    //        }
+    //    }
+    //    public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+    //    {
+    //        if (!IsActive) return;
+    //        // Remove delta of gravity for sustain
+    //        currentVelocity -=  c.motor.CharacterUp * (c.gravity * deltaTime * (1f - c.sustainJumpGravity));
+    //        c._sustainJumpTimer -= deltaTime;
+    //    }
+    //    public override void Exit()
+    //    {
+    //        if (!IsActive) return;
+    //        IsActive = false;
+    //    }
+    //}
 }
