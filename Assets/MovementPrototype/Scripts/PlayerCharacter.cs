@@ -11,58 +11,9 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     [SerializeField] private Transform cameraTarget;
     [SerializeField] private Transform root;
     [SerializeField] private InputReader _inputReader;
-    [Header("Base settings")]
-    [SerializeField] private float gravity = -30f;
-    [SerializeField] private float heightChangeResponse = 15f;
-    [SerializeField] private float speedChangeResponse = 20f;
-    [SerializeField, Range(0f, 1f)] private float standCameraHeight = 0.9f;
-    [SerializeField, Range(0f, 1f)] private float crouchCameraHeight = 0.6f;
-    [Header("Stand")]
-    [SerializeField] private float standHeight = 2f;
-    [SerializeField] private float walkSpeed = 7f;
-    [SerializeField] private float runSpeed = 15f;
-    [Header("Jump")]
-    [SerializeField] private float jumpSpeed = 10f;
-    [SerializeField] private float jumpCayoteTime = 0.2f;
-    [SerializeField] private bool isSustainJumpEnabled = true;
-    [SerializeField, Range(0f, 1f)] private float sustainJumpGravity = 0.3f;
-    [SerializeField] private float sustainJumpDuration = 0.5f;
-    [Header("Crouch")]
-    [SerializeField] private float crouchHeight = 1f;
-    [SerializeField] private float crouchSpeed = 5f;
-    [Header("Slide")]
-    [SerializeField] private float slideGravity = -30f;
-    [SerializeField] private float startSlideSpeed = 20f;
-    [SerializeField] private float minSlideSpeed = 10f;
-    [SerializeField] private float minSlideTime = 1f;
-    [SerializeField] private float maxSlideTime = 3f;
-    [SerializeField] private float slideCayoteTime = 0.3f;
-    [SerializeField] private float slideFriction = 0.8f;
-    [SerializeField] private float slideControlForce = 5f;
-    [Header("Airborn")]
-    [SerializeField] private float airSpeed = 12f;
-    [SerializeField] private float airAcceleration = 70f;
-    [Header("Walls run and grab")]
-    [SerializeField] private float wallCheckDistance = 1f;
-    [SerializeField] private RaycastSensorSettings wallRunSensorSettings = new RaycastSensorSettings()
-    {
-        Origin = new Vector3(0f, 1f, 0f),
-        Direction = Vector3.right,
-        CastLength = 1f,
-    };
-    [SerializeField] private float maxWallRunTime = 4f;
-    [SerializeField] private float wallRunGravity = -10f;
-    [SerializeField] private float maxWallGrabTime = 1f;
-    [SerializeField] private float minSpeedToRefreshGrabTimer = 6f;
-    [SerializeField] private LayerMask wallLayers;
-    [SerializeField] private LayerMask grabWallLayers;
-    [SerializeField] private float wallRunSpeed = 12f;
-    [SerializeField] private float wallJumpSpeed = 10f;
-    [SerializeField, Tooltip("x = Wall normal ratio; y = CharUp ratio; z = CharForward ratio")] 
-    private Vector3 wallJumpForcesRatio = new(1, 1, 1);
-    [SerializeField, Range(0,89)] private float maxWallRunAngle = 45f;
-    [SerializeField, Range(0, 20)] private float maxWallAngleMagnitude = 15;
-    [SerializeField] private float gravityToWall = 10f;
+    [Header("Settings")]
+    [SerializeField] private PlayerMovementSettings movementSettings;
+    public PlayerMovementSettings s => movementSettings;
     private Dictionary<Type, PlayerState> _statesList;
     private PlayerState _currentState;
     private Quaternion _requestRotation;
@@ -71,13 +22,13 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     //
     private bool _isGrounded => motor.GroundingStatus.IsStableOnGround;
     // Sprint
-    private float PreparedRunSpeed => Mathf.Lerp(walkSpeed, runSpeed, Mathf.Clamp01(_inputReader.MoveInput.y));
+    private float PreparedRunSpeed => Mathf.Lerp(s.WalkSpeed, s.RunSpeed, Mathf.Clamp01(_inputReader.MoveInput.y));
     private bool _isSprinting => _inputReader != null && _inputReader.IsSprinting;
     // Jump
     private bool _requestJump;
     private float _jumpCayoteTimer;
     private float _sustainJumpTimer;
-    private bool _requestSustainJump => isSustainJumpEnabled &&
+    private bool _requestSustainJump => s.IsSustainJumpEnabled &&
                 !_requestJump &&
                 _inputReader.IsJumpHold &&
                 _sustainJumpTimer > 0f;
@@ -87,8 +38,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     private bool _canUncrouch = true;
     private Collider[] _uncrouchOverlapResults = new Collider[8];
     // Slide
-    private bool _canSlide => (_isCrouching || _slideTimer > maxSlideTime - minSlideTime) && 
-        motor.Velocity.magnitude > minSlideSpeed && 
+    private bool _canSlide => (_isCrouching || _slideTimer > s.MaxSlideTime - s.MinSlideTime) && 
+        motor.Velocity.magnitude > s.MinSlideSpeed && 
         (_isGrounded || _slideCayoteTimer > 0f) && 
         _slideTimer >= 0f;
     private float _slideCayoteTimer;
@@ -97,8 +48,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     private Vector3 _wallNormal;
     private float _wallGrabTimer;
     private List<RaycastSensor> _wallSensors;
-// Other
-    private Stack<Vector3> _requestedVelocities = new Stack<Vector3>();
+    // Other
+    private Vector3 _requestAddVelocity;
     #endregion
     public void Initialize(InputReader inputReader)
     {
@@ -113,8 +64,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
         };
         _wallSensors = new List<RaycastSensor>()
         {
-            new RaycastSensor(transform).SetSettings(wallRunSensorSettings).SetLayerMask(wallLayers),
-            new RaycastSensor(transform).SetSettings(wallRunSensorSettings).SetLayerMask(wallLayers).SetCastDirection(-wallRunSensorSettings.Direction),
+            new RaycastSensor(transform).SetSettings(s.WallRunSensorSettings).SetLayerMask(s.WallLayers),
+            new RaycastSensor(transform).SetSettings(s.WallRunSensorSettings).SetLayerMask(s.WallLayers).SetCastDirection(-s.WallRunSensorSettings.Direction),
         };
         EnterState<StandState>();
        
@@ -124,9 +75,9 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
         RefreshWallGrab();
         RefreshJumpCayoteTimer();
     }
-    public void AddVelocity(Vector3 velocity, float timer = 0f)
+    public void AddVelocity(Vector3 velocity)
     {
-        _requestedVelocities.Push(velocity);
+        _requestAddVelocity += velocity;
     }
     public void UpdateInput(CharacterInput input)
     {
@@ -139,7 +90,7 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     public void UpdateBody()
     {
         var currentHeight = motor.Capsule.height;
-        var normalizedRootHeight = currentHeight / standHeight;
+        var normalizedRootHeight = currentHeight / s.StandHeight;
 
         var cameraTargetHeight = currentHeight * _currentState.CameraHeight;
         var rootTargetScale = new Vector3(1f, normalizedRootHeight, 1f);
@@ -148,14 +99,14 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
             (
             cameraTarget.localPosition,
             new Vector3(0f, cameraTargetHeight, 0f),
-            1f - Mathf.Exp(-heightChangeResponse * Time.deltaTime)
+            1f - Mathf.Exp(-s.HeightChangeResponse * Time.deltaTime)
             );
 
         root.localScale = Vector3.Lerp
             (
             root.localScale,
             rootTargetScale,
-            1f - Mathf.Exp(-heightChangeResponse * Time.deltaTime)
+            1f - Mathf.Exp(-s.HeightChangeResponse * Time.deltaTime)
             );
     }
     private void SubscribeToInput(bool wantSub)
@@ -179,27 +130,27 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     }
     private void RefreshJumpCayoteTimer()
     {
-        _jumpCayoteTimer = jumpCayoteTime;
+        _jumpCayoteTimer = s.JumpCayoteTime;
     }
     private void RefreshSustainJump()
     {
-        _sustainJumpTimer = sustainJumpDuration;
+        _sustainJumpTimer = s.SustainJumpDuration;
     }
     private void RefreshSlideCayoteTimer()
     {
-        _slideCayoteTimer = slideCayoteTime;
+        _slideCayoteTimer = s.SlideCayoteTime;
     }
     private void RefreshWallGrab()
     {
-        _wallGrabTimer = maxWallGrabTime;
+        _wallGrabTimer = s.MaxWallGrabTime;
     }
     private void SetCrouchDemensions()
     {
         motor.SetCapsuleDimensions
                 (
                 radius: motor.Capsule.radius,
-                height: crouchHeight,
-                yOffset: crouchHeight * 0.5f
+                height: s.CrouchHeight,
+                yOffset: s.CrouchHeight * 0.5f
                 );
     }
     private void SetStandDemensions()
@@ -207,8 +158,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
         motor.SetCapsuleDimensions
                 (
                 radius: motor.Capsule.radius,
-                height: standHeight,
-                yOffset: standHeight * 0.5f
+                height: s.StandHeight,
+                yOffset: s.StandHeight * 0.5f
                 );
     }
     /// <summary>
@@ -291,9 +242,11 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
         _currentState.UpdateVelocity(ref currentVelocity, deltaTime);
-        if(_requestedVelocities.Count > 0)
-            for(int i = 0; i < _requestedVelocities.Count; i++)
-                currentVelocity += _requestedVelocities.Pop();
+        if( _requestAddVelocity != Vector3.zero)
+        {
+            currentVelocity += _requestAddVelocity;
+            _requestAddVelocity = Vector3.zero;
+        }
 
         if (_requestJump)
         {
@@ -304,7 +257,7 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
                 _slideCayoteTimer = 0f;
                 // Set minimum jump speed to jump
                 var currentVerticalSpeed = Vector3.Dot(currentVelocity, motor.CharacterUp);
-                var targetVerticalSpeed = Mathf.Max(jumpSpeed, currentVerticalSpeed);
+                var targetVerticalSpeed = Mathf.Max(s.JumpSpeed, currentVerticalSpeed);
                 // Add the difference between current and target vertical speeds to the current velocity
                 currentVelocity += motor.CharacterUp * (targetVerticalSpeed - currentVerticalSpeed);
                 // Refresh sustain jump
