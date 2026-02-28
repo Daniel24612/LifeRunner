@@ -20,10 +20,10 @@ MonoBehaviour:
   <StandHeight>k__BackingField: 2
   <WalkSpeed>k__BackingField: 8
   <RunSpeed>k__BackingField: 15
-  <JumpSpeed>k__BackingField: 12
+  <JumpSpeed>k__BackingField: 10
   <JumpCayoteTime>k__BackingField: 0.05
   <IsSustainJumpEnabled>k__BackingField: 1
-  <SustainJumpGravity>k__BackingField: 0
+  <SustainJumpGravity>k__BackingField: 0.203
   <SustainJumpDuration>k__BackingField: 0.4
   <CrouchHeight>k__BackingField: 1
   <CrouchSpeed>k__BackingField: 5
@@ -46,11 +46,11 @@ MonoBehaviour:
     m_Bits: 65
   <MaxWallRunAngle>k__BackingField: 45
   <MaxWallAngleMagnitude>k__BackingField: 15
-  <GravityToWall>k__BackingField: 10
-  <MaxWallRunTime>k__BackingField: 4
-  <WallRunGravity>k__BackingField: -10
+  <GravityToWall>k__BackingField: 0
+  <MaxWallRunTime>k__BackingField: 3
+  <WallRunGravity>k__BackingField: -30
   <WallRunSpeed>k__BackingField: 12
   <MaxWallGrabTime>k__BackingField: 1
-  <MinSpeedToRefreshGrabTimer>k__BackingField: 10
-  <WallJumpSpeed>k__BackingField: 10
+  <MinSpeedToRefreshGrabTimer>k__BackingField: 7
+  <WallJumpSpeed>k__BackingField: 12
   <WallJumpForcesRatio>k__BackingField: {x: 1, y: 1.45, z: 1.8}

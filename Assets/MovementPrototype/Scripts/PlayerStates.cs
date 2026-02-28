@@ -307,6 +307,7 @@ public partial class PlayerCharacter
     public class WallRunState : PlayerState
     {
         private RaycastSensor _wallRunSensor;
+        private float _wallRunTimer;
         public WallRunState(PlayerCharacter character) : base(character)
         {
             CameraHeight = c.s.StandCameraHeight;
@@ -321,9 +322,11 @@ public partial class PlayerCharacter
         {
             c.SetStandDemensions();
             _wallRunSensor.SetCastDirection(-c._wallNormal);
+            _wallRunTimer = c.s.MaxWallRunTime;
         }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
+            _wallRunTimer -= deltaTime;
             _wallRunSensor.Cast();
             Debug.Log("WallRunSensor: " + _wallRunSensor.HasDetectedHit);
             if (!_wallRunSensor.HasDetectedHit)
@@ -331,6 +334,9 @@ public partial class PlayerCharacter
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
+            float verticalVelocity = Vector3.Dot(currentVelocity, c.motor.CharacterUp);
+
+
             // 1. Находим направление вдоль стены (перпендикуляр к нормали и "верху")
             Vector3 wallForward = Vector3.Cross(c._wallNormal, c.motor.CharacterUp);
 
@@ -343,7 +349,6 @@ public partial class PlayerCharacter
                 c.EnterToAnotherState();
             }
 
-
             // 2. Устанавливаем скорость бега
             currentVelocity = wallForward * c.s.WallRunSpeed;
 
@@ -353,6 +358,11 @@ public partial class PlayerCharacter
             // 4. Легкая гравитация, чтобы было ощущение физики
             //currentVelocity += c.motor.CharacterUp * c.wallRunGravity * deltaTime;
 
+            // 5. Гравитация если таймер бега закончился, чтобы игрок не мог бегать вечно
+            if(_wallRunTimer <= 0f)
+            {
+                currentVelocity += c.motor.CharacterUp * (c.s.WallRunGravity * deltaTime + verticalVelocity);
+            }
             // Выход из бега: если прыгнули или коснулись настоящей земли
             if (c._requestJump || c.motor.GroundingStatus.IsStableOnGround)
             {
