@@ -38,8 +38,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     private bool _canUncrouch = true;
     private Collider[] _uncrouchOverlapResults = new Collider[8];
     // Slide
-    private bool _canSlide => (_isCrouching || _slideTimer > s.MaxSlideTime - s.MinSlideTime) && 
-        motor.Velocity.magnitude > s.MinSlideSpeed && 
+    private bool _canSlide => (_isCrouching || _slideTimer > s.Slide_MaxTime - s.Slide_MinTime) && 
+        motor.Velocity.magnitude > s.Slide_MinSpeed && 
         (_isGrounded || _slideCayoteTimer > 0f) && 
         _slideTimer >= 0f;
     private float _slideCayoteTimer;
@@ -64,8 +64,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
         };
         _wallSensors = new List<RaycastSensor>()
         {
-            new RaycastSensor(transform).SetSettings(s.WallRunSensorSettings).SetLayerMask(s.WallLayers),
-            new RaycastSensor(transform).SetSettings(s.WallRunSensorSettings).SetLayerMask(s.WallLayers).SetCastDirection(-s.WallRunSensorSettings.Direction),
+            new RaycastSensor(transform).SetSettings(s.WallRun_SensorSettings).SetLayerMask(s.WallRun_Layers),
+            new RaycastSensor(transform).SetSettings(s.WallRun_SensorSettings).SetLayerMask(s.WallRun_Layers).SetCastDirection(-s.WallRun_SensorSettings.Direction),
         };
         EnterState<StandState>();
        
@@ -138,19 +138,46 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     }
     private void RefreshSlideCayoteTimer()
     {
-        _slideCayoteTimer = s.SlideCayoteTime;
+        _slideCayoteTimer = s.Slide_CayoteTime;
     }
     private void RefreshWallGrab()
     {
-        _wallGrabTimer = s.MaxWallGrabTime;
+        _wallGrabTimer = s.WallGrab_MaxTime;
+    }
+    public bool TryWall(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+    {
+        if (Mathf.Abs(Vector3.Angle(hitNormal, motor.CharacterUp) - 90f) < s.MaxWallAngleMagnitude)
+        {
+            var angleToWall = Vector3.Angle(Vector3.ProjectOnPlane(-hitNormal, motor.CharacterUp), motor.CharacterForward);
+            //var angleVelocityToWall = Vector3.Angle(Vector3.ProjectOnPlane(-hitNormal, c.motor.CharacterUp), c.motor.Velocity);
+            if (angleToWall > s.WallRun_MaxAngle && angleToWall < s.WallRun_MaxAngle + 90 && ((1 << hitCollider.gameObject.layer) & s.WallRun_Layers) != 0)
+            {
+                //if (angleVelocityToWall > c.maxWallRunAngle && angleVelocityToWall < c.maxWallRunAngle + 90)
+                {
+                    _wallNormal = hitNormal;
+                    EnterState<WallRunState>();
+                }
+            }
+            else if (angleToWall < s.WallRun_MaxAngle && ((1 << hitCollider.gameObject.layer) & s.WallGrab_Layers) != 0)
+            {
+                _wallNormal = hitNormal;
+                EnterState<WallGrabState>();
+                if (Vector3.Dot(motor.BaseVelocity, -hitNormal) > s.WallGrab_MinSpeedToRefreshTimer)
+                {
+                    RefreshWallGrab();
+                }
+            }
+            return true;
+        }
+        return false;
     }
     private void SetCrouchDemensions()
     {
         motor.SetCapsuleDimensions
                 (
                 radius: motor.Capsule.radius,
-                height: s.CrouchHeight,
-                yOffset: s.CrouchHeight * 0.5f
+                height: s.Crouch_Height,
+                yOffset: s.Crouch_Height * 0.5f
                 );
     }
     private void SetStandDemensions()

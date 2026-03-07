@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovementSettings
   <Gravity>k__BackingField: -30
   <HeightChangeResponse>k__BackingField: 15
-  <SpeedChangeResponse>k__BackingField: 20
+  <SpeedChangeResponse>k__BackingField: 25
   <StandCameraHeight>k__BackingField: 0.9
   <CrouchCameraHeight>k__BackingField: 0.6
   <StandHeight>k__BackingField: 2
@@ -23,34 +23,36 @@ MonoBehaviour:
   <JumpSpeed>k__BackingField: 10
   <JumpCayoteTime>k__BackingField: 0.05
   <IsSustainJumpEnabled>k__BackingField: 1
-  <SustainJumpGravity>k__BackingField: 0.203
+  <SustainJumpGravity>k__BackingField: 0.2
   <SustainJumpDuration>k__BackingField: 0.4
-  <CrouchHeight>k__BackingField: 1
-  <CrouchSpeed>k__BackingField: 5
-  <SlideGravity>k__BackingField: -30
-  <StartSlideSpeed>k__BackingField: 20
-  <MinSlideSpeed>k__BackingField: 10
-  <MinSlideTime>k__BackingField: 0.8
-  <MaxSlideTime>k__BackingField: 7
-  <SlideCayoteTime>k__BackingField: 0.7
-  <SlideFriction>k__BackingField: 0.5
-  <SlideControlForce>k__BackingField: 5
-  <AirSpeed>k__BackingField: 12
+  <Crouch_Height>k__BackingField: 1
+  <Crouch_Speed>k__BackingField: 5
+  <Slide_Gravity>k__BackingField: -20
+  <Slide_StartSpeed>k__BackingField: 20
+  <Slide_MinSpeed>k__BackingField: 10
+  <Slide_MinTime>k__BackingField: 1
+  <Slide_MaxTime>k__BackingField: 7
+  <Slide_CayoteTime>k__BackingField: 1
+  <Slide_Friction>k__BackingField: 0
+  <Slide_ControlForce>k__BackingField: 5
+  <AirSpeed>k__BackingField: 15
   <AirAcceleration>k__BackingField: 30
-  <WallCheckDistance>k__BackingField: 1
-  <WallLayers>k__BackingField:
+  <WallCheckDistance>k__BackingField: 0.5
+  <WallRun_Layers>k__BackingField:
     serializedVersion: 2
     m_Bits: 65
-  <GrabWallLayers>k__BackingField:
+  <WallGrab_Layers>k__BackingField:
     serializedVersion: 2
     m_Bits: 65
-  <MaxWallRunAngle>k__BackingField: 45
+  <WallRun_MaxAngle>k__BackingField: 45
   <MaxWallAngleMagnitude>k__BackingField: 15
   <GravityToWall>k__BackingField: 0
-  <MaxWallRunTime>k__BackingField: 3
-  <WallRunGravity>k__BackingField: -30
-  <WallRunSpeed>k__BackingField: 12
-  <MaxWallGrabTime>k__BackingField: 1
-  <MinSpeedToRefreshGrabTimer>k__BackingField: 7
-  <WallJumpSpeed>k__BackingField: 12
-  <WallJumpForcesRatio>k__BackingField: {x: 1, y: 1.45, z: 1.8}
+  <WallRun_MaxTime>k__BackingField: 3
+  <WallRun_Gravity>k__BackingField: -10
+  <WallRun_VerticalDeceleration>k__BackingField: 0
+  <WallRun_MaxVerticalSpeed>k__BackingField: -1
+  <WallRun_Speed>k__BackingField: 12
+  <WallGrab_MaxTime>k__BackingField: 1
+  <WallGrab_MinSpeedToRefreshTimer>k__BackingField: 9
+  <Wall_JumpSpeed>k__BackingField: 10
+  <Wall_JumpForcesRatio>k__BackingField: {x: 0.5, y: 1, z: 1}

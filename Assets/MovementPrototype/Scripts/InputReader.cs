@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
-using UnityEngine.UI;
 
 // Реализуем интерфейс, который сгенерировала Unity (I + имя Map + Actions)
 public class InputReader : MonoBehaviour, PlayerControls.IGameplayActions
