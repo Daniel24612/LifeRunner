@@ -131,7 +131,6 @@ public partial class PlayerCharacter
         private float _tempMaxStableSlopeAngle;
         private Vector3 _afterGroundHitRequestVelocity;
         private Vector3 _tempHorizontalForce;
-        private float _enterSpeed;
         public SlideState(PlayerCharacter character) : base(character)
         {
             CameraHeight = c.s.CrouchCameraHeight;
@@ -143,7 +142,7 @@ public partial class PlayerCharacter
             c._canUncrouch = false;
             c.RefreshSlideCayoteTimer();
             _tempMaxStableSlopeAngle = c.motor.MaxStableSlopeAngle;
-            c.motor.MaxStableSlopeAngle = 70f;
+            c.motor.MaxStableSlopeAngle = c.s.Slide_StableSlopeAngle;
         }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
@@ -292,6 +291,20 @@ public partial class PlayerCharacter
     {
         private RaycastSensor _wallRunSensor;
         private float _wallRunTimer;
+        private float _overMaxAngleCayoteTimer;
+        private Vector3 _wallForward;
+        public void UpdateWallForward()
+        {
+            _wallForward = Vector3.Cross(c._wallNormal, c.motor.CharacterUp);
+            // Выбираем направление (вперед или назад) в зависимости от ввода
+            if (Vector3.Dot(c.motor.CharacterForward, _wallForward) < 0)
+                _wallForward = -_wallForward;
+        }
+        public bool IsValidWallRunVelocity(Vector3 currentVelocity)
+        {
+            return Vector3.ProjectOnPlane(currentVelocity, c.motor.CharacterUp).magnitude > c.s.WallRun_MinSpeed && 
+                Vector3.Dot(currentVelocity, _wallForward) > 0;
+        }
         public WallRunState(PlayerCharacter character) : base(character)
         {
             CameraHeight = c.s.StandCameraHeight;
@@ -307,6 +320,7 @@ public partial class PlayerCharacter
             c.SetStandDemensions();
             _wallRunSensor.SetCastDirection(-c._wallNormal);
             _wallRunTimer = c.s.WallRun_MaxTime;
+            UpdateWallForward();
         }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
@@ -318,31 +332,43 @@ public partial class PlayerCharacter
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
-            float verticalVelocity = Vector3.Dot(currentVelocity, c.motor.CharacterUp);
-
-
-            // 1. Находим направление вдоль стены (перпендикуляр к нормали и "верху")
-            Vector3 wallForward = Vector3.Cross(c._wallNormal, c.motor.CharacterUp);
-
-            // Выбираем направление (вперед или назад) в зависимости от ввода
-            if (Vector3.Dot(c.motor.CharacterForward, wallForward) < 0)
-                wallForward = -wallForward;
-
-            if (Vector3.Angle(wallForward, c.motor.CharacterForward) > c.s.WallRun_MaxAngle)
+            // Если скорость слишком маленькая, то отваливаемся от стены
+            if (c.s.WallRun_UngrabIfLessThanMinSpeed && IsValidWallRunVelocity(currentVelocity))
             {
                 c.EnterToAnotherState();
             }
 
-            // 2. Устанавливаем скорость бега
-            currentVelocity = wallForward * c.s.WallRun_Speed;
+            // Убираем скорость в направлении стены для правильных расчетов
+            currentVelocity -= c._wallNormal * c.s.WallRun_GravityToWall;
 
-            // 3. Липкая сила: слегка прижимаем к стене, чтобы не "отвалиться" на углах
-            currentVelocity += -c._wallNormal * 2f;
+            // Находим скорость по вертикали и горизонтали относительно стены
+            float verticalVelocity = Vector3.Dot(currentVelocity, c.motor.CharacterUp);
+            float horizontalVelocity = Vector3.ProjectOnPlane(currentVelocity, c.motor.CharacterUp).magnitude;
 
-            // 4. 
+            // Кайотный таймер угла
+            if (Vector3.Angle(_wallForward, c.motor.CharacterForward) > c.s.WallRun_MaxAngle)
+            {
+                _overMaxAngleCayoteTimer -= deltaTime;
+                if (_overMaxAngleCayoteTimer <= 0f)
+                    c.EnterToAnotherState();
+            }else if(_overMaxAngleCayoteTimer < c.s.WallRun_OverMaxAngleCayoteTime)
+            {
+                _overMaxAngleCayoteTimer = c.s.WallRun_OverMaxAngleCayoteTime;
+            }
+
+            horizontalVelocity -= c.s.WallRun_HorizontalDeceleration * deltaTime;
+            horizontalVelocity = Mathf.Clamp(horizontalVelocity, c.s.WallRun_MinSpeed, c.s.WallRun_MaxHorizontalSpeed);
+
+            // Устанавливаем скорость бега
+            currentVelocity = _wallForward * horizontalVelocity;
+
+            // Липкая сила: слегка прижимаем к стене, чтобы не "отвалиться" на углах
+            currentVelocity += c._wallNormal * c.s.WallRun_GravityToWall;
+
+            // Ограничиваем вертикальную скорость, чтобы не улетать слишком высоко или быстро падать
             verticalVelocity = Mathf.Clamp(verticalVelocity, -c.s.WallRun_MaxAbsVerticalSpeed, c.s.WallRun_MaxAbsVerticalSpeed);
 
-            // 5. Гравитация если таймер бега закончился, чтобы игрок не мог бегать вечно
+            // Гравитация если таймер бега закончился, чтобы игрок не мог бегать вечно
             if (_wallRunTimer <= 0f)
             {
                 verticalVelocity = c.s.WallRun_Gravity * deltaTime + verticalVelocity;
@@ -380,6 +406,7 @@ public partial class PlayerCharacter
             {
                 c._wallNormal = hitNormal;
                 _wallRunSensor.SetCastDirection(-c._wallNormal);
+                UpdateWallForward();
             }
             else
             {
@@ -431,29 +458,47 @@ public partial class PlayerCharacter
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
+            // To right and up relative to wall normal
+            Vector3 wallHorizontal = Vector3.ProjectOnPlane(c.motor.CharacterRight, c._wallNormal).normalized;
+            Vector3 wallVertical = Vector3.ProjectOnPlane(c.motor.CharacterUp, c._wallNormal).normalized;
+
             c._wallGrabTimer -= deltaTime;
+
+            // Remove velocity towards wall
+            float velocityVertical = Vector3.Dot(currentVelocity, wallVertical);
+            currentVelocity -= velocityVertical * wallVertical;
+
             // Neutrilize velocity
-            if(!c._inputReader.IsJumpHold)
+            if (!c._inputReader.IsJumpHold)
                 currentVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, deltaTime * c.s.SpeedChangeResponse);
+
+            if (velocityVertical < 0)
+                velocityVertical = Mathf.Lerp(velocityVertical, 0, deltaTime * c.s.SpeedChangeResponse);
+
             currentVelocity += -c._wallNormal;
+            currentVelocity += velocityVertical * wallVertical;
+
             if (c._requestJump)
+                WallGrabJump(ref currentVelocity, deltaTime);
+        }
+        protected void WallGrabJump(ref Vector3 currentVelocity, float deltaTime)
+        {
+            float angleToWall = Vector3.Angle(c.motor.CharacterForward, -Vector3.ProjectOnPlane(c._wallNormal, c.motor.CharacterUp));
+            if (angleToWall > 90f)
             {
-                if (Vector3.Angle(c.motor.CharacterForward, Vector3.ProjectOnPlane(c._wallNormal, c.motor.CharacterUp)) < 90f)
-                {
                 currentVelocity = Vector3.zero;
                 currentVelocity += (c._wallNormal * c.s.Wall_JumpForcesRatio.x +
                     c.motor.CharacterUp * c.s.Wall_JumpForcesRatio.y +
                     c.motor.CharacterForward * c.s.Wall_JumpForcesRatio.z).normalized * c.s.Wall_JumpSpeed;
                 c.RefreshSustainJump();
                 c.EnterToAnotherState();
-                }
-                else
-                {
-                    //if angle > 90f
-                    c.RefreshSustainJump();
-                    currentVelocity += Vector3.ProjectOnPlane(c.motor.CharacterUp, c._wallNormal).normalized * c.s.Wall_JumpSpeed;
+            }
+            else
+            {
+                //if angleToWall < 90f
+                c.RefreshSustainJump();
+                currentVelocity += Vector3.ProjectOnPlane(c.motor.CharacterUp, c._wallNormal).normalized * c.s.Wall_JumpSpeed;
 
-                }
             }
         }
         public override void Exit()
@@ -462,7 +507,43 @@ public partial class PlayerCharacter
         }
     }
 
-
+    public class LedgeGrabState : PlayerState
+    {
+        public LedgeGrabState(PlayerCharacter c) : base(c)
+        {
+            CameraHeight = c.s.StandCameraHeight;
+        }
+        public override void Enter()
+        {
+            c.SetStandDemensions();
+        }
+        public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+        {
+            base.UpdateRotation(ref currentRotation, deltaTime);
+        }
+        public override void BeforeCharacterUpdate(float deltaTime)
+        {
+            if (c._ledgeGrabTimer < 0)
+                c.EnterToAnotherState();
+        }
+        public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+        {
+            c._ledgeGrabTimer -= deltaTime;
+            // Neutrilize velocity
+            if (!c._inputReader.IsJumpHold)
+                currentVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, deltaTime * c.s.SpeedChangeResponse);
+            if (c._requestJump)
+            {
+                currentVelocity = Vector3.zero;
+                currentVelocity += (Vector3.up + c.motor.CharacterForward).normalized * c.s.Wall_JumpSpeed;
+                c.RefreshSustainJump();
+                c.EnterToAnotherState();
+            }
+        }
+        public override void Exit()
+        {
+        }
+    }
 
 
 

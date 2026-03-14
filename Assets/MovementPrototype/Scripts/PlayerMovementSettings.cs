@@ -1,4 +1,3 @@
-using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "PlayerMovementSettings", menuName = "Player/Movement Settings")]
@@ -33,6 +32,7 @@ public class PlayerMovementSettings : ScriptableObject
     [field: SerializeField] public float Slide_MinSpeed { get; private set; } = 10f;
     [field: SerializeField] public float Slide_MinTime { get; private set; } = 1f;
     [field: SerializeField] public float Slide_MaxTime { get; private set; } = 3f;
+    [field: SerializeField, Range(0, 89)] public float Slide_StableSlopeAngle { get; private set; } = 60f;
     [field: SerializeField] public float Slide_CayoteTime { get; private set; } = 0.3f;
     [field: SerializeField] public float Slide_Friction { get; private set; } = 0.8f;
     [field: SerializeField] public float Slide_ControlForce { get; private set; } = 5f;
@@ -57,12 +57,17 @@ public class PlayerMovementSettings : ScriptableObject
         Direction = Vector3.right,
         CastLength = 1f,
     };
-    [field: SerializeField] public float WallRun_MaxTime { get; private set; } = 4f;
+    [field: SerializeField, Min(0)] public float WallRun_MaxTime { get; private set; } = 4f;
     [field: SerializeField] public float WallRun_Gravity { get; private set; } = -10f;
     [field: SerializeField] public float WallRun_VerticalDeceleration { get; private set; } = -2f;
+    [field: SerializeField, Min(0)] public float WallRun_HorizontalDeceleration { get; private set; } = 1f;
+    [field: SerializeField, Min(0)] public float WallRun_MinSpeed { get; private set; } = 10f;
+    [field: SerializeField, Min(0)] public float WallRun_MaxHorizontalSpeed { get; private set; } = 16f;
     [field: SerializeField, Min(0)] public float WallRun_MaxAbsVerticalSpeed { get; private set; } = 10f;
-    [field: SerializeField] public float WallRun_FinalVerticalSpeed { get; private set; } = 10f;
-    [field: SerializeField, Min(0)] public float WallRun_Speed { get; private set; } = 12f;
+    [field: SerializeField] public float WallRun_FinalVerticalSpeed { get; private set; } = -1f;
+    [field: SerializeField, Min(0)] public float WallRun_OverMaxAngleCayoteTime { get; private set; } = 1f;
+    [field: SerializeField] public float WallRun_GravityToWall { get; private set; } = -2f;
+    [field: SerializeField] public bool WallRun_UngrabIfLessThanMinSpeed { get; private set; }
 
     [field: Header("Wall Grab")]
     [field: SerializeField] public float WallGrab_MaxTime { get; private set; } = 1f;

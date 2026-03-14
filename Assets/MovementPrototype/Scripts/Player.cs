@@ -28,8 +28,6 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        CameraInput cameraInput = new CameraInput { LookInput = inputReader.LookInput };
-        playerCamera?.UpdateRotation(cameraInput);
         CharacterInput characterInput = new CharacterInput
         {
             Rotation = playerCamera.transform.rotation,
@@ -39,6 +37,8 @@ public class Player : MonoBehaviour
     }
     private void LateUpdate()
     {
+        CameraInput cameraInput = new CameraInput { LookInput = inputReader.LookInput };
+        playerCamera?.UpdateRotation(cameraInput);
         playerCamera?.UpdatePosition(playerCharacter.GetCameraTarget());
     }
     private void Teleport(Vector3 position)

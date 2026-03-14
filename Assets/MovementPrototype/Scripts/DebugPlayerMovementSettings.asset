@@ -18,13 +18,13 @@ MonoBehaviour:
   <StandCameraHeight>k__BackingField: 0.9
   <CrouchCameraHeight>k__BackingField: 0.6
   <StandHeight>k__BackingField: 2
-  <WalkSpeed>k__BackingField: 8
+  <WalkSpeed>k__BackingField: 5
   <RunSpeed>k__BackingField: 15
   <JumpSpeed>k__BackingField: 10
   <JumpCayoteTime>k__BackingField: 0.05
   <IsSustainJumpEnabled>k__BackingField: 1
-  <SustainJumpGravity>k__BackingField: 0.2
-  <SustainJumpDuration>k__BackingField: 0.4
+  <SustainJumpGravity>k__BackingField: 0.1
+  <SustainJumpDuration>k__BackingField: 0.35
   <Crouch_Height>k__BackingField: 1
   <Crouch_Speed>k__BackingField: 5
   <Slide_Gravity>k__BackingField: -20
@@ -32,8 +32,9 @@ MonoBehaviour:
   <Slide_MinSpeed>k__BackingField: 10
   <Slide_MinTime>k__BackingField: 1
   <Slide_MaxTime>k__BackingField: 7
+  <Slide_StableSlopeAngle>k__BackingField: 60
   <Slide_CayoteTime>k__BackingField: 1
-  <Slide_Friction>k__BackingField: 0
+  <Slide_Friction>k__BackingField: 0.41
   <Slide_ControlForce>k__BackingField: 5
   <AirSpeed>k__BackingField: 15
   <AirAcceleration>k__BackingField: 30
@@ -46,13 +47,19 @@ MonoBehaviour:
     m_Bits: 65
   <WallRun_MaxAngle>k__BackingField: 45
   <MaxWallAngleMagnitude>k__BackingField: 15
-  <GravityToWall>k__BackingField: 0
+  <GravityToWall>k__BackingField: -20
   <WallRun_MaxTime>k__BackingField: 3
   <WallRun_Gravity>k__BackingField: -10
-  <WallRun_VerticalDeceleration>k__BackingField: 0
-  <WallRun_MaxVerticalSpeed>k__BackingField: -1
-  <WallRun_Speed>k__BackingField: 12
+  <WallRun_VerticalDeceleration>k__BackingField: -3
+  <WallRun_HorizontalDeceleration>k__BackingField: 1
+  <WallRun_MinSpeed>k__BackingField: 10
+  <WallRun_MaxHorizontalSpeed>k__BackingField: 16
+  <WallRun_MaxAbsVerticalSpeed>k__BackingField: 4
+  <WallRun_FinalVerticalSpeed>k__BackingField: -1
+  <WallRun_OverMaxAngleCayoteTime>k__BackingField: 1
+  <WallRun_GravityToWall>k__BackingField: 0
+  <WallRun_UngrabIfLessThanMinSpeed>k__BackingField: 0
   <WallGrab_MaxTime>k__BackingField: 1
   <WallGrab_MinSpeedToRefreshTimer>k__BackingField: 9
   <Wall_JumpSpeed>k__BackingField: 10
-  <Wall_JumpForcesRatio>k__BackingField: {x: 0.5, y: 1, z: 1}
+  <Wall_JumpForcesRatio>k__BackingField: {x: 1.5, y: 1, z: 1}

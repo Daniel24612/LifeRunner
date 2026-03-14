@@ -47,7 +47,9 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
     // Walls
     private Vector3 _wallNormal;
     private float _wallGrabTimer;
-    private List<RaycastSensor> _wallSensors;
+    // Ledge grab
+    private float _ledgeGrabTimer;
+    
     // Other
     private Vector3 _requestAddVelocity;
     #endregion
@@ -62,11 +64,7 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
             {typeof(WallRunState), new WallRunState(this) },
             {typeof(WallGrabState), new WallGrabState(this) }
         };
-        _wallSensors = new List<RaycastSensor>()
-        {
-            new RaycastSensor(transform).SetSettings(s.WallRun_SensorSettings).SetLayerMask(s.WallRun_Layers),
-            new RaycastSensor(transform).SetSettings(s.WallRun_SensorSettings).SetLayerMask(s.WallRun_Layers).SetCastDirection(-s.WallRun_SensorSettings.Direction),
-        };
+        
         EnterState<StandState>();
        
         _inputReader = inputReader;
@@ -241,14 +239,6 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
             return;
         }
     }
-    public void UpdateWallSensors()
-    {
-        foreach (var sensor in _wallSensors)
-        {
-            sensor.Cast();
-        }
-    }
-
     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
     {
         _currentState.UpdateRotation(ref currentRotation, deltaTime);
