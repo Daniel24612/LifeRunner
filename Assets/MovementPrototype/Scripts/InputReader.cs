@@ -3,34 +3,32 @@ using UnityEngine.InputSystem;
 using System;
 
 // Реализуем интерфейс, который сгенерировала Unity (I + имя Map + Actions)
-public class InputReader : MonoBehaviour, PlayerControls.IGameplayActions
+public class InputReader : PlayerControls.IGameplayActions
 {
+    private InputSettings inputSettings;
     public Vector2 MoveInput => _moveInput;
     private Vector2 _moveInput;
     public Vector2 LookInput => _lookInput;
     private Vector2 _lookInput;
     public bool IsJumpHold { get; private set; }
     public bool IsCrouching { get; private set; }
-    [SerializeField] private ButtonInputSwichType crouchingType = ButtonInputSwichType.Hold;
+    private ButtonInputSwichType crouchingType => inputSettings.CrouchingType;
     public bool IsSprinting { get; private set; }
-    [SerializeField] private ButtonInputSwichType sprintingInputType = ButtonInputSwichType.Hold;
+    private ButtonInputSwichType sprintingInputType => inputSettings.SprintingInputType;
     public event Action OnJumpPerformed;
     public event Action OnVaultingPerformed;
     public event Action OnTeleportCalled;
     private PlayerControls _controls;
 
-    private void Awake()
+    public InputReader(InputSettings settings)
     {
         _controls = new PlayerControls();
-
         _controls.Gameplay.SetCallbacks(this);
+        inputSettings = settings;
     }
 
-    private void OnEnable() => _controls.Enable();
-    private void OnDisable() => _controls.Disable();
-    private void Update()
-    {
-    }
+    public void Enable() => _controls.Enable();
+    public void Disable() => _controls.Disable();
     public void OnMove(InputAction.CallbackContext context)
     {
         _moveInput = context.ReadValue<Vector2>();

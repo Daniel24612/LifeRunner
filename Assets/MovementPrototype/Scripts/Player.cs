@@ -2,11 +2,14 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private PlayerCharacter playerCharacter;
+    [SerializeField] private PlayerCharacterMover playerCharacter;
     [SerializeField] private PlayerCamera playerCamera;
-    [SerializeField] private InputReader inputReader;
+    [SerializeField] private InputSettings inputSettings;
+    private InputReader inputReader;
     void Start()
     {
+        inputReader = new InputReader(inputSettings);
+        inputReader.Enable();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 

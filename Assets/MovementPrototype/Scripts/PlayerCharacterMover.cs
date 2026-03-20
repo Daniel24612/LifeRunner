@@ -3,7 +3,7 @@ using KinematicCharacterController;
 using System.Collections.Generic;
 using System;
 using TMPro;
-public partial class PlayerCharacter : MonoBehaviour, ICharacterController
+public partial class PlayerCharacterMover : MonoBehaviour, ICharacterController
 {
     #region Fields
     [SerializeField] private TextMeshProUGUI speedText;
@@ -153,7 +153,10 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
                 //if (angleVelocityToWall > c.maxWallRunAngle && angleVelocityToWall < c.maxWallRunAngle + 90)
                 {
                     _wallNormal = hitNormal;
-                    EnterState<WallRunState>();
+                    var wallState = _statesList[typeof(WallRunState)] as WallRunState;
+                    wallState.UpdateWallForward();
+                    if(wallState.IsValidWallRunVelocity(motor.Velocity))
+                        EnterState<WallRunState>();
                 }
             }
             else if (angleToWall < s.WallRun_MaxAngle && ((1 << hitCollider.gameObject.layer) & s.WallGrab_Layers) != 0)
@@ -261,6 +264,8 @@ public partial class PlayerCharacter : MonoBehaviour, ICharacterController
         _currentState.UpdateVelocity(ref currentVelocity, deltaTime);
         if( _requestAddVelocity != Vector3.zero)
         {
+            if(Vector3.Dot(_requestAddVelocity, motor.CharacterUp) > 0)
+                motor.ForceUnground(0f);
             currentVelocity += _requestAddVelocity;
             _requestAddVelocity = Vector3.zero;
         }

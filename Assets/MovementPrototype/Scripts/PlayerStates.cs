@@ -1,13 +1,13 @@
 using KinematicCharacterController;
 using UnityEngine;
 
-public partial class PlayerCharacter
+public partial class PlayerCharacterMover
 {
     public abstract class PlayerState
     {
-        protected PlayerCharacter c;
+        protected PlayerCharacterMover c;
         public float CameraHeight { get; protected set; }
-        public PlayerState(PlayerCharacter character)
+        public PlayerState(PlayerCharacterMover character)
         {
             c = character;
         }
@@ -47,7 +47,7 @@ public partial class PlayerCharacter
     }
     public class StandState : PlayerState
     {
-        public StandState(PlayerCharacter character) : base(character)
+        public StandState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = character.s.StandCameraHeight;
         }
@@ -87,7 +87,7 @@ public partial class PlayerCharacter
     }
     public class CrouchState : PlayerState
     {
-        public CrouchState(PlayerCharacter character) : base(character)
+        public CrouchState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = character.s.StandCameraHeight;
         }
@@ -131,7 +131,7 @@ public partial class PlayerCharacter
         private float _tempMaxStableSlopeAngle;
         private Vector3 _afterGroundHitRequestVelocity;
         private Vector3 _tempHorizontalForce;
-        public SlideState(PlayerCharacter character) : base(character)
+        public SlideState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = c.s.CrouchCameraHeight;
         }
@@ -225,20 +225,15 @@ public partial class PlayerCharacter
     }
     public class AirbornState : PlayerState
     {
-        private float _maxPlanarSpeed = 0f;
-        public AirbornState(PlayerCharacter character) : base(character)
+        private bool _isSprinted;
+        public AirbornState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = character.s.StandCameraHeight;
         }
         public override void Enter()
         {
             c.SetStandDemensions();
-            _maxPlanarSpeed = Mathf.Max(
-                Vector3.ProjectOnPlane(c.motor.BaseVelocity, c.motor.CharacterUp).magnitude,
-                c._isSprinting? 
-                Mathf.Lerp(c.s.WalkSpeed, c.s.AirSpeed, Mathf.Clamp01(c._inputReader.MoveInput.y)) : 
-                c.s.WalkSpeed
-                );
+            _isSprinted = c._isSprinting;
         }
         public override void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
         {
@@ -254,6 +249,12 @@ public partial class PlayerCharacter
         {
             if (c._requestMovement.sqrMagnitude > 0f)
             {
+                var maxPlanarSpeed = Mathf.Max(
+                Vector3.ProjectOnPlane(c.motor.BaseVelocity, c.motor.CharacterUp).magnitude,
+                _isSprinted ?
+                Mathf.Lerp(c.s.WalkSpeed, c.s.AirSpeed, Mathf.Clamp01(c._inputReader.MoveInput.y)) :
+                c.s.WalkSpeed
+                );
                 // Calculations
                 var planarMovement = Vector3.ProjectOnPlane(c._requestMovement, c.motor.CharacterUp) * c._requestMovement.magnitude;
                 var currentPlanarVelocity = Vector3.ProjectOnPlane(currentVelocity, c.motor.CharacterUp);
@@ -261,7 +262,7 @@ public partial class PlayerCharacter
                 var movementForce = planarMovement * c.s.AirAcceleration * deltaTime;
                 var targetPlanarVelocity = currentPlanarVelocity + movementForce;
                 // Clamp vector
-                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, _maxPlanarSpeed);
+                targetPlanarVelocity = Vector3.ClampMagnitude(targetPlanarVelocity, maxPlanarSpeed);
                 // Add delta
                 currentVelocity += targetPlanarVelocity - currentPlanarVelocity;
             }
@@ -305,7 +306,7 @@ public partial class PlayerCharacter
             return Vector3.ProjectOnPlane(currentVelocity, c.motor.CharacterUp).magnitude > c.s.WallRun_MinSpeed && 
                 Vector3.Dot(currentVelocity, _wallForward) > 0;
         }
-        public WallRunState(PlayerCharacter character) : base(character)
+        public WallRunState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = c.s.StandCameraHeight;
             _wallRunSensor = new RaycastSensor(c.transform)
@@ -430,7 +431,7 @@ public partial class PlayerCharacter
     public class WallGrabState : PlayerState
     {
         private RaycastSensor _wallGrabSensor;
-        public WallGrabState(PlayerCharacter c) : base(c)
+        public WallGrabState(PlayerCharacterMover c) : base(c)
         {
             CameraHeight = c.s.StandCameraHeight;
             _wallGrabSensor = new RaycastSensor(c.transform)
@@ -505,11 +506,10 @@ public partial class PlayerCharacter
         {
             
         }
-    }
-
+    } 
     public class LedgeGrabState : PlayerState
     {
-        public LedgeGrabState(PlayerCharacter c) : base(c)
+        public LedgeGrabState(PlayerCharacterMover c) : base(c)
         {
             CameraHeight = c.s.StandCameraHeight;
         }

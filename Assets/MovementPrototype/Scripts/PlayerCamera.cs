@@ -2,17 +2,14 @@ using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
-    [SerializeField, Min(0)] private float sensitivity = 0.1f;
+    [SerializeField] private InputSettings inputSettings;
+    private float sensitivity => inputSettings.LookSensitivity;
     private Vector3 _eulerAngles;
 
     public void Initialize(Transform target)
     {
         transform.position = target.position;
         transform.eulerAngles = _eulerAngles = target.eulerAngles;
-    }
-    private void Start()
-    {
-      
     }
     public void UpdateRotation(CameraInput input)
     {
