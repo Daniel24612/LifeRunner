@@ -36,6 +36,7 @@ public class PlayerMovementSettings : ScriptableObject
     [field: SerializeField] public float Slide_CayoteTime { get; private set; } = 0.3f;
     [field: SerializeField] public float Slide_Friction { get; private set; } = 0.8f;
     [field: SerializeField] public float Slide_ControlForce { get; private set; } = 5f;
+    [field: SerializeField] public LayerMask Slide_Mask { get; private set; }
 
     [field: Header("Airborn")]
     [field: SerializeField] public float AirSpeed { get; private set; } = 12f;

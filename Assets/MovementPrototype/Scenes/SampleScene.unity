@@ -14648,7 +14648,7 @@ MonoBehaviour:
   InteractiveRigidbodyHandling: 1
   RigidbodyInteractionType: 0
   SimulatedCharacterMass: 1
-  PreserveAttachedRigidbodyMomentum: 1
+  PreserveAttachedRigidbodyMomentum: 0
   HasPlanarConstraint: 0
   PlanarConstraintAxis: {x: 0, y: 0, z: 1}
   MaxMovementIterations: 5
@@ -26784,7 +26784,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60.000004
+  field of view: 70
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -28039,7 +28039,7 @@ GameObject:
   - component: {fileID: 1439594698}
   - component: {fileID: 1439594705}
   - component: {fileID: 1439594706}
-  m_Layer: 0
+  m_Layer: 4
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28179,7 +28179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KinematicCharacterController.PhysicsMover
   Rigidbody: {fileID: 1439594698}
-  MoveWithPhysics: 1
+  MoveWithPhysics: 0
 --- !u!114 &1439594706
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32748,7 +32748,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 49779323}
 --- !u!33 &1862309455

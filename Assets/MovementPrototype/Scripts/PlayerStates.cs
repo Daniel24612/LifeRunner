@@ -1,5 +1,6 @@
 using KinematicCharacterController;
 using UnityEngine;
+using MyScriptUtils;
 
 public partial class PlayerCharacterMover
 {
@@ -131,30 +132,33 @@ public partial class PlayerCharacterMover
         private float _tempMaxStableSlopeAngle;
         private Vector3 _afterGroundHitRequestVelocity;
         private Vector3 _tempHorizontalForce;
+        private Vector3 _groundNormal;
+        private bool _wasGrounded;
+        private bool IsGrounded => c._isGrounded || _wasGrounded;
         public SlideState(PlayerCharacterMover character) : base(character)
         {
             CameraHeight = c.s.CrouchCameraHeight;
         }
-        public override void Enter()
+        public override void Enter()    
         {
             c.SetCrouchDemensions();
             c._slideTimer = c.s.Slide_MaxTime;
             c._canUncrouch = false;
             c.RefreshSlideCayoteTimer();
             _tempMaxStableSlopeAngle = c.motor.MaxStableSlopeAngle;
-            c.motor.MaxStableSlopeAngle = c.s.Slide_StableSlopeAngle;
+            c.motor.MaxStableSlopeAngle = 0;
         }
         public override void BeforeCharacterUpdate(float deltaTime)
         {
-            if (!c._isGrounded && c._slideCayoteTimer > 0f)
+            if (!IsGrounded && c._slideCayoteTimer > 0f)
             {
                 c._slideCayoteTimer -= deltaTime;
             }
             else
             {
-                c._slideCayoteTimer = c.motor.GroundingStatus.IsStableOnGround ? c.s.Slide_CayoteTime : 0f;
+                c._slideCayoteTimer = IsGrounded ? c.s.Slide_CayoteTime : 0f;
             }
-            if(!c._canSlide)
+            if(!(c._isCrouching && c._slideTimer > 0) && !c._canSlide)
                 c.EnterToAnotherState();
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
@@ -163,21 +167,24 @@ public partial class PlayerCharacterMover
             c._canUncrouch = (c._slideTimer <= c.s.Slide_MaxTime - c.s.Slide_MinTime);
 
             // Add as speed
-            if (c._isGrounded)
+            if (IsGrounded)
             {
-            var slideSpeed = Mathf.Max(((c._slideTimer + deltaTime == c.s.Slide_MaxTime) ? c.s.Slide_StartSpeed : 0), currentVelocity.magnitude);
-            currentVelocity = c.motor.GetDirectionTangentToSurface
-                (
-                    direction: currentVelocity,
-                    surfaceNormal: c.motor.GroundingStatus.GroundNormal
-                ) * slideSpeed;
+                Debug.Log("IsGrounded");
+                //var groundNormal = _wasGrounded ? _groundNormal : c.motor.GroundingStatus.GroundNormal;
 
-            if(_afterGroundHitRequestVelocity != Vector3.zero)
+                //var slideSpeed = Mathf.Max(((c._slideTimer + deltaTime == c.s.Slide_MaxTime) ? c.s.Slide_StartSpeed : 0), currentVelocity.magnitude);
+                //currentVelocity = c.motor.GetDirectionTangentToSurface
+                //(
+                //    direction: currentVelocity,
+                //    surfaceNormal: groundNormal
+                //) * slideSpeed;
+
+                if (_afterGroundHitRequestVelocity != Vector3.zero)
                 {
                     currentVelocity = _afterGroundHitRequestVelocity;
                 }
-            // Add friction
-            currentVelocity -= currentVelocity * (c.s.Slide_Friction * deltaTime); 
+                // Add friction
+                currentVelocity -= currentVelocity * (c.s.Slide_Friction * deltaTime);
             }
             // Add slide gravity
             currentVelocity += c.motor.CharacterUp * (c.s.Slide_Gravity * deltaTime);
@@ -200,11 +207,33 @@ public partial class PlayerCharacterMover
                 currentVelocity += horizontalForce + verticalForce;
                 _tempHorizontalForce = horizontalForce;
             }
-
+            if (c._requestJump && IsGrounded)
+            {
+                // Unstick from ground
+                c.motor.ForceUnground(time: 0.1f);
+                // Set minimum jump speed to jump
+                var currentVerticalSpeed = Vector3.Dot(currentVelocity, c.motor.CharacterUp);
+                var targetVerticalSpeed = Mathf.Max(c.s.JumpSpeed, currentVerticalSpeed);
+                // Add the difference between current and target vertical speeds to the current velocity
+                currentVelocity += c.motor.CharacterUp * (targetVerticalSpeed - currentVerticalSpeed);
+                // Refresh sustain jump
+                c.RefreshSustainJump();
+                c._jumpCayoteTimer = 0f;
+                c._requestJump = false;
+            }
+            _wasGrounded = false;
         }
         public override void AfterCharacterUpdate(float deltaTime)
         {
             _afterGroundHitRequestVelocity = Vector3.zero;
+        }
+        public override void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+        {
+            base.OnMovementHit(hitCollider, hitNormal, hitPoint, ref hitStabilityReport);
+            if (LayerMaskUtils.IsInLayerMask(c.s.Slide_Mask, hitCollider.gameObject.layer) && Vector3.Angle(hitNormal, c.motor.CharacterUp) < c.s.Slide_StableSlopeAngle)
+            {
+                _wasGrounded = true;
+            }
         }
         public override void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {

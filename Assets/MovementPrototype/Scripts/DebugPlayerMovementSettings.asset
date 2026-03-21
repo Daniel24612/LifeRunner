@@ -32,10 +32,13 @@ MonoBehaviour:
   <Slide_MinSpeed>k__BackingField: 10
   <Slide_MinTime>k__BackingField: 1
   <Slide_MaxTime>k__BackingField: 7
-  <Slide_StableSlopeAngle>k__BackingField: 0
+  <Slide_StableSlopeAngle>k__BackingField: 39.2
   <Slide_CayoteTime>k__BackingField: 1
-  <Slide_Friction>k__BackingField: 0.2
+  <Slide_Friction>k__BackingField: 0.4
   <Slide_ControlForce>k__BackingField: 5
+  <Slide_Mask>k__BackingField:
+    serializedVersion: 2
+    m_Bits: 129
   <AirSpeed>k__BackingField: 15
   <AirAcceleration>k__BackingField: 30
   <WallCheckDistance>k__BackingField: 0.5
