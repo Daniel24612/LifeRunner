@@ -1,9 +1,9 @@
 using UnityEngine;
-namespace MyScriptUtils
+namespace UnityUtils
 {
     public static class LayerMaskUtils
     {
-        public static bool IsInLayerMask(LayerMask myLayers, LayerMask objLayer)
+        public static bool Contains(LayerMask myLayers, LayerMask objLayer)
         {
             return ((myLayers & (1 << objLayer)) != 0);
         }
