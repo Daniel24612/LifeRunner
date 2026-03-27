@@ -2,55 +2,79 @@ using System.Collections.Generic;
 using UnityEngine;
 public class RaycastSensor
 {
-    public RaycastHit HitInfo => hitInfo;
-    public bool HasDetectedHit => hitInfo.collider != null;
+    public virtual RaycastHit HitInfo => _hitInfo;
+    public virtual bool HasDetectedHit => _hitInfo.collider != null;
 
-    private Transform tr;
-    private bool includeRotation = true;
-    private float castLength = 1f;
-    private Vector3 origin = Vector3.zero;
-    private Vector3 castDirection = Vector3.forward;
-    public LayerMask layermask = 255;
+    protected Transform _tr;
 
-    private RaycastHit hitInfo;
+    protected Vector3 _currentPos;
+    protected Quaternion _currentRot;
 
+    protected bool _includeRotation = true;
+    protected float _castLength = 1f;
+    protected Vector3 _origin = Vector3.zero;
+    protected Vector3 _castDirection = Vector3.forward;
+    protected LayerMask _layermask = 255;
+
+    private RaycastHit _hitInfo;
+
+    protected List<RaycastHit> _hits;
     public RaycastSensor(Transform playerTransform)
     {
-        tr = playerTransform;
+        _tr = playerTransform;
     }
 
-    public void Cast()
+    public virtual void Cast()
     {
-        Vector3 worldOrigin = tr.TransformPoint(origin);
-        Vector3 worldDirection = GetCastDirection();
-        Physics.Raycast(worldOrigin, worldDirection, out hitInfo, castLength, layermask, QueryTriggerInteraction.Ignore);
+        Vector3 worldOrigin = Vector3.zero;
+        Vector3 worldDirection = _castDirection;
+        
+        worldOrigin = _tr.TransformPoint(_origin);
+        worldDirection = GetCastDirection(_tr.rotation);
+       
+        Physics.Raycast(worldOrigin, worldDirection, out _hitInfo, _castLength, _layermask, QueryTriggerInteraction.Ignore);
+       
     }
-
-    public RaycastSensor SetIncludeRotation(bool include)
+    public virtual RaycastSensor SetTransform(Transform transform)
     {
-        includeRotation = include;
+        _tr = transform;
         return this;
     }
-    public RaycastSensor SetCastDirection(Vector3 direction)
+    public virtual RaycastSensor SetIncludeRotation(bool include)
+    {
+        _includeRotation = include;
+        return this;
+    }
+    public virtual RaycastSensor SetCastDirection(Vector3 direction)
     {
         if (direction != Vector3.zero)
-            castDirection = direction.normalized;
+            _castDirection = direction.normalized;
         return this;
     }
-    public RaycastSensor SetCastLength(float length)
+    public virtual RaycastSensor SetCastLength(float length)
     {
         if (length > 0)
-            castLength = length;
+            _castLength = length;
         return this;
     }
-    public RaycastSensor SetOrigin(Vector3 localOrigin)
+    public virtual RaycastSensor SetOrigin(Vector3 localOrigin)
     {
-        origin = localOrigin;
+        _origin = localOrigin;
         return this;
     }
-    public RaycastSensor SetLayerMask(LayerMask mask)
+    public virtual RaycastSensor SetLayerMask(LayerMask mask)
     {
-        layermask = mask;
+        _layermask = mask;
+        return this;
+    }
+    public virtual RaycastSensor SetPos(Vector3 pos)
+    {
+        _currentPos = pos;
+        return this;
+    }
+    public virtual RaycastSensor SetRot(Quaternion rot)
+    {
+        _currentRot = rot;
         return this;
     }
     public RaycastSensor SetSettings(RaycastSensorSettings settings)
@@ -61,31 +85,21 @@ public class RaycastSensor
         SetLayerMask(settings.LayerMask);
         return this;
     }
-    Vector3 GetCastDirection()
+    protected Vector3 GetCastDirection(Quaternion rot)
     {
-        if (!includeRotation) return castDirection;
+        if (!_includeRotation) return _castDirection;
 
-        return tr.rotation * castDirection;
+        return rot * _castDirection;
     }
     public RaycastSensorSettings GetSettings()
     {
         return new RaycastSensorSettings
         {
-            Origin = origin,
-            Direction = castDirection,
-            CastLength = castLength,
-            LayerMask = layermask
+            Origin = _origin,
+            Direction = _castDirection,
+            CastLength = _castLength,
+            LayerMask = _layermask
         };
-    }
-    public void DrawDebug()
-    {
-        if (!HasDetectedHit) return;
-
-        Debug.DrawRay(hitInfo.point, hitInfo.normal, Color.red, Time.deltaTime);
-        float markerSize = 0.2f;
-        Debug.DrawLine(hitInfo.point + Vector3.up * markerSize, hitInfo.point - Vector3.up * markerSize, Color.green, Time.deltaTime);
-        Debug.DrawLine(hitInfo.point + Vector3.right * markerSize, hitInfo.point - Vector3.right * markerSize, Color.green, Time.deltaTime);
-        Debug.DrawLine(hitInfo.point + Vector3.forward * markerSize, hitInfo.point - Vector3.forward * markerSize, Color.green, Time.deltaTime);
     }
 }
 public struct RaycastSensorSettings
@@ -95,6 +109,103 @@ public struct RaycastSensorSettings
     public float CastLength;
     public LayerMask LayerMask;
 }
+
+public class CapsuleCastSensor : RaycastSensor
+{
+    public override bool HasDetectedHit => _hits.Count > 0;
+    public override RaycastHit HitInfo => _hits[0];
+
+    private float _radius;
+    private float _height;
+
+    public CapsuleCastSensor(Transform transform) : base(transform)
+    {
+
+    }
+    public override void Cast()
+    {
+        Vector3 worldOrigin = Vector3.zero;
+        Quaternion worldRotation = Quaternion.identity;
+
+        if (_tr != null)
+        {
+            worldOrigin = _tr.TransformPoint(_origin);
+            worldRotation = _tr.rotation;
+        }
+
+        if (_currentPos != Vector3.zero || _currentRot != Quaternion.identity)
+        {
+            // Учитываем кастомную позицию, если она была задана через SetPos
+            worldOrigin = _currentPos + (_currentRot * _origin);
+            worldRotation = _currentRot;
+        }
+
+        Vector3 worldDirection = GetCastDirection(worldRotation);
+
+        // Вычисляем центры сфер капсулы в мировых координатах
+        Vector3 p1 = worldOrigin + worldRotation * (Vector3.up * _radius);
+        Vector3 p2 = worldOrigin + worldRotation * (Vector3.up * (_height - _radius));
+
+        var hits = Physics.CapsuleCastAll(p1, p2, _radius, worldDirection, _castLength, _layermask);
+
+        _hits = new List<RaycastHit>(hits);
+
+        _currentPos = Vector3.zero;
+        _currentRot = Quaternion.identity;
+    }
+
+    public CapsuleCastSensor SetRadius(float radius)
+    {
+        _radius = radius;
+        return this;
+    }
+    public CapsuleCastSensor SetHeight(float height)
+    {
+        _height = height;
+        return this;
+    }
+
+
+    public override RaycastSensor SetCastDirection(Vector3 direction)
+    {
+        return base.SetCastDirection(direction) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetIncludeRotation(bool include)
+    {
+        return base.SetIncludeRotation(include) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetOrigin(Vector3 localOrigin)
+    {
+        return base.SetOrigin(localOrigin) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetPos(Vector3 pos)
+    {
+        return base.SetPos(pos) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetRot(Quaternion rot)
+    {
+        return base.SetRot(rot) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetCastLength(float length)
+    {
+        return base.SetCastLength(length) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetLayerMask(LayerMask mask)
+    {
+        return base.SetLayerMask(mask) as CapsuleCastSensor;
+    }
+    public override RaycastSensor SetTransform(Transform transform)
+    {
+        return base.SetTransform(transform) as CapsuleCastSensor;
+    }
+}
+
+
+
+
+
+
+
 
 /// <summary>
 /// Uses one sensor as several by changing settings.
@@ -138,7 +249,7 @@ public class MultiRS<T>
             hitInfo = sensor.HitInfo
         };
     }
-    public MultiRS<T> AddSensor(T sensorName, RaycastSensorSettings settings)
+    public MultiRS<T> AddOrSetSensor(T sensorName, RaycastSensorSettings settings)
     {
         if (!sensorInfos.ContainsKey(sensorName))
             sensorInfos.Add(sensorName, new RSInfo { settings = settings });
@@ -152,6 +263,10 @@ public class MultiRS<T>
             return sensorInfos[sensorName];
         else
            return default;
+    }
+    public void SetNewSensor(RaycastSensor sensor)
+    {
+
     }
     public struct RSInfo
     {

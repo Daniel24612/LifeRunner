@@ -95,5 +95,10 @@ namespace UnityUtils {
         static void PerformActionOnChildren(this Transform parent, System.Action<Transform> action) {
             parent.ForEveryChild(action);
         }
+
+        public static void SetChildren(this Transform parent, Transform children)
+        {
+            children?.SetParent(parent);
+        }
     }
 }
