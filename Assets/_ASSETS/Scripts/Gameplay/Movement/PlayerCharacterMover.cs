@@ -29,8 +29,19 @@ namespace Player.Movement
         internal float PreparedRunSpeed => Mathf.Lerp(s.WalkSpeed, s.RunSpeed, Mathf.Clamp01(_inputReader.MoveInput.y));
         internal bool IsSprinting => _inputReader != null && _inputReader.IsSprinting;
         // Jump
-        internal bool _requestJump;
+        internal bool _requestJump
+        {
+            get
+            {
+                return _jumpBuffeTimer > 0;
+            }
+            set
+            {
+                _jumpBuffeTimer = value ? s.JumpBufferTime : 0;
+            }
+        }
         internal float _jumpCayoteTimer;
+        internal float _jumpBuffeTimer;
         internal float _sustainJumpTimer;
         internal bool _requestSustainJump => s.IsSustainJumpEnabled &&
                     !_requestJump &&
@@ -257,6 +268,7 @@ namespace Player.Movement
                 SetCrouchDemensions();
             }
             _currentState.BeforeCharacterUpdate(deltaTime);
+            _jumpBuffeTimer -= deltaTime;
         }
         public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
@@ -287,7 +299,6 @@ namespace Player.Movement
                     _jumpCayoteTimer = 0f;
                     CharacterJumped?.Invoke();
                 }
-                _requestJump = false;
             }
             speedText.text = $"Speed: {currentVelocity.magnitude:0.0}\n" +
                              $"Planar speed: {Vector3.ProjectOnPlane(currentVelocity, motor.CharacterUp).magnitude:0.0}\n" +

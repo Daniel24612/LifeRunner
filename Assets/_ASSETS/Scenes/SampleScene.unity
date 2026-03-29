@@ -28070,55 +28070,6 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
---- !u!1 &1430853546
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1430853548}
-  - component: {fileID: 1430853547}
-  m_Layer: 0
-  m_Name: SoundManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1430853547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1430853546}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d92a72564119f2743a98d781f527a776, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AudioSystem.SoundManager
-  emitterPrefab: {fileID: 4164976527728975752, guid: 6b0961a4040219c498dc1a72fa1ee5ad, type: 3}
-  _collectionCheck: 1
-  _defaultCapacity: 10
-  _maxPoolSize: 100
-  _maxSoundInstances: 30
---- !u!4 &1430853548
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1430853546}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.91359, y: -11, z: 0.22652}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &1433914528
 Mesh:
   m_ObjectHideFlags: 0
@@ -28471,7 +28422,7 @@ MonoBehaviour:
   - {fileID: 921737932}
   - {fileID: 906353127}
   - {fileID: 422093105}
-  moveSpeed: 2
+  moveSpeed: 7
 --- !u!1 &1450269235
 GameObject:
   m_ObjectHideFlags: 0
@@ -30188,14 +30139,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLifetimeScope
   parentReference:
-    TypeName: 
+    TypeName: ProjectLifetimeScope
   autoRun: 1
   autoInjectGameObjects:
   - {fileID: 349336565}
   - {fileID: 564681837}
   - {fileID: 994331160}
-  soundManager: {fileID: 1430853547}
-  inputSettings: {fileID: 11400000, guid: 80ca44a1d55fc3d44baa5ae54ba00a2a, type: 2}
   playerMovementSettings: {fileID: 11400000, guid: cdd19b8a1761095479edf44df0397d98, type: 2}
 --- !u!4 &1543792589
 Transform:
@@ -44033,6 +43982,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1543792589}
   - {fileID: 1450269236}
   - {fileID: 410087041}
   - {fileID: 832575519}
@@ -44044,5 +43994,3 @@ SceneRoots:
   - {fileID: 1840277608}
   - {fileID: 1272473968}
   - {fileID: 1963076531}
-  - {fileID: 1543792589}
-  - {fileID: 1430853548}

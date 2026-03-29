@@ -29,8 +29,7 @@ public class PlayerCamera : MonoBehaviour
     private float _currentTiltZ;
     private float sensitivity => _inputSettings.LookSensitivity;
 
-    private Sequence _shakeSequence;
-    private float _tempVerticalRot;
+        private float _tempVerticalRot;
     private float _bobTimer;
 
     public void Initialize(Transform target)

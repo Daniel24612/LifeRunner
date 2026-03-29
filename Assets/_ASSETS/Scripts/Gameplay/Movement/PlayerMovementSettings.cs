@@ -18,6 +18,7 @@ public class PlayerMovementSettings : ScriptableObject
     [field: Header("Jump")]
     [field: SerializeField] public float JumpSpeed { get; private set; } = 10f;
     [field: SerializeField] public float JumpCayoteTime { get; private set; } = 0.2f;
+    [field: SerializeField] public float JumpBufferTime { get; private set; } = 0.07f;
     [field: SerializeField] public bool IsSustainJumpEnabled { get; private set; } = true;
     [field: SerializeField, Range(0f, 1f)] public float SustainJumpGravity { get; private set; } = 0.3f;
     [field: SerializeField] public float SustainJumpDuration { get; private set; } = 0.5f;
