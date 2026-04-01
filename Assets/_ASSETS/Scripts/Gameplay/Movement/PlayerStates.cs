@@ -32,14 +32,14 @@ namespace Player.Movement
             currentState?.Exit();
             currentState = _statesList[type];
             currentState?.Enter();
-            Debug.Log($"Enter to {type}");
+            //Debug.Log($"Enter to {type}");
         }
         public void EnterState<T>() where T : PlayerState
         {
             currentState?.Exit();
             currentState = _statesList[typeof(T)];
             currentState?.Enter();
-            Debug.Log($"Enter to {typeof(T)}");
+            //Debug.Log($"Enter to {typeof(T)}");
         }
         internal T GetStateReference<T>() where T : PlayerState
         {

@@ -15,13 +15,28 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: 2fef013d9287262418429036db8243ed
   m_SerializeEntries:
-  - m_GUID: 6e12e0856283ebd47aa18c5a8d48cf64
+  - m_GUID: 14cb8d5df063d1d4c978e7010ade2df7
+    m_Address: Assets/_ASSETS/Scenes/SceneGroups/GroupsLists/SceneGroupsList.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 24590201440e203468c8c6c07902cc46
     m_Address: Assets/_ASSETS/Scenes/MainMenu.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 816f98bc0ffcef24994b6e558513f892
+    m_Address: Assets/_ASSETS/Scenes/LevelsList.asset
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 99c9720ab356a0642a771bea13969a05
     m_Address: Assets/_ASSETS/Scenes/SampleScene.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d70d76e5f22191d48913217dda0fe583
+    m_Address: Assets/_ASSETS/Prefabs/UI/LevelButton.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

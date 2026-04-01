@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec722fb5fe4dfe2449adb9ab048885c3, type: 3}
+  m_Name: SceneGroupsList
+  m_EditorClassIdentifier: Assembly-CSharp::SceneManagement.SceneGroupsList
+  groups:
+  - {fileID: 11400000, guid: 1f31af65fda4abd4eab631ec1f7a9532, type: 2}
+  - {fileID: 11400000, guid: bdfaaf962df7a9e45812c4dc42e60c4f, type: 2}

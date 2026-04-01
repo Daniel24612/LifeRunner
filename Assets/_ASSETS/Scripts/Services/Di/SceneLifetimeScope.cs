@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class SceneLifetimeScope : LifetimeScope
 {
-    [SerializeField] private GameplayInputReader inputReader;
     [Header("SettingsSO")]
     [SerializeField] private PlayerMovementSettings playerMovementSettings;
     protected override void Configure(IContainerBuilder builder)

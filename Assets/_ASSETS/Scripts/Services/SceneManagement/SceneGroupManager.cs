@@ -7,7 +7,6 @@ using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 using Eflatun.SceneReference;
 
-
 namespace SceneManagement
 {
     public class SceneGroupManager
@@ -24,7 +23,6 @@ namespace SceneManagement
         {
             "BootStrapper"
         };
-
         public async UniTask LoadScenes(SceneGroup sceneGroup, IProgress<float> progress, bool reloadDupScenes = false)
         {
             Status = SceneLoadingStatus.Loading;
@@ -65,7 +63,7 @@ namespace SceneManagement
             void UpdateProgress()
             {
                 completedTasks++;
-                progress?.Report((float)completedTasks / totalTasks);
+                progress?.Report(((float)completedTasks / totalTasks) + 1);
             }
 
             // Установка активной сцены
@@ -102,13 +100,13 @@ namespace SceneManagement
         {
             Status = SceneLoadingStatus.Unloading;
 
-            var activeSceneName = SceneManager.GetActiveScene().name;
+            //var activeSceneName = SceneManager.GetActiveScene().name;
             var tasks = new List<UniTask>();
 
             for (int i = SceneManager.sceneCount - 1; i > 0; i--)
             {
                 var scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded || _protectedScenes.Contains(scene.name) || scene.name == activeSceneName) continue;
+                if (!scene.isLoaded || _protectedScenes.Contains(scene.name) /*|| scene.name == activeSceneName*/) continue;
 
                 if (_addressableInstances.TryGetValue(scene.name, out var instance))
                 {
