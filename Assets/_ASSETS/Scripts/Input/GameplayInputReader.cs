@@ -17,7 +17,7 @@ public class GameplayInputReader : PlayerControls.IGameplayActions
     public bool IsSprinting { get; private set; }
     private ButtonInputSwichType sprintingInputType => inputSettings.SprintingInputType;
     public event Action OnJumpPerformed;
-    public event Action OnVaultingPerformed;
+    //public event Action OnVaultingPerformed;
     public event Action OnTeleportCalled;
     private PlayerControls _controls;
 

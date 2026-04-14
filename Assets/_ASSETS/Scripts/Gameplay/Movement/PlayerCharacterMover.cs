@@ -54,7 +54,7 @@ namespace Player.Movement
         internal Collider[] _uncrouchOverlapResults = new Collider[8];
         // Slide
         internal bool _RequestSlide => (_IsCrouching || _slideTimer > s.Slide_MaxTime - s.Slide_MinTime) &&
-            motor.Velocity.magnitude > s.Slide_MinSpeed &&
+            motor.Velocity.sqrMagnitude > s.Slide_MinSpeed * s.Slide_MinSpeed &&
             (IsGrounded || _slideCayoteTimer > 0f) &&
             _slideTimer >= 0f;
         internal float _slideCayoteTimer;
@@ -112,20 +112,34 @@ namespace Player.Movement
 
             var cameraTargetHeight = currentHeight * _currentState.CameraHeight;
             var rootTargetScale = new Vector3(1f, normalizedRootHeight, 1f);
-
-            cameraTarget.localPosition = Vector3.Lerp
+            if (Mathf.Abs(cameraTargetHeight - cameraTarget.localPosition.y) > 0.01)
+            {
+                cameraTarget.localPosition = Vector3.Lerp
                 (
                 cameraTarget.localPosition,
                 new Vector3(0f, cameraTargetHeight, 0f),
                 1f - Mathf.Exp(-s.HeightChangeResponse * Time.deltaTime)
                 );
+            }
+            else
+            {
+                cameraTarget.localPosition = new Vector3(0f, cameraTargetHeight, 0f);
+            }
 
-            root.localScale = Vector3.Lerp
+            if (Mathf.Abs(rootTargetScale.y - root.localScale.y) > 0.01)
+            {
+                root.localScale = Vector3.Lerp
                 (
                 root.localScale,
                 rootTargetScale,
                 1f - Mathf.Exp(-s.HeightChangeResponse * Time.deltaTime)
                 );
+            }
+            else
+            {
+                cameraTarget.localPosition = new Vector3(0f, cameraTargetHeight, 0f);
+            }
+            
         }
         private void SubscribeToInput(bool wantSub)
         {

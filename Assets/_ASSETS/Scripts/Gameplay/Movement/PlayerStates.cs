@@ -7,7 +7,7 @@ namespace Player.Movement
 {
     public class MoverStateMachine
     {
-        //private PlayerMovementSettings _settings;
+        //private PlayerMovementSettings _settings; 
         //private PlayerCharacterMover _mover;
         public MoverStateMachine(PlayerMovementSettings settings, PlayerCharacterMover mover)
         {
@@ -205,7 +205,7 @@ namespace Player.Movement
                 c._slideCayoteTimer = IsGrounded ? c.s.Slide_CayoteTime : 0f;
             }
             if (!(c._IsCrouching && c._slideTimer > 0) && !c._RequestSlide)
-                c.EnterToAnotherState();
+                c.EnterState<CrouchState>();
         }
         public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
         {
@@ -723,79 +723,4 @@ namespace Player.Movement
             FromForwardUpToDown,
         }
     }
-
-
-
-    //public abstract class SubState 
-    //{
-    //    public bool IsActive { get; protected set; }
-    //    protected PlayerCharacter c;
-    //    public SubState(PlayerCharacter c)
-    //    {
-    //        this.c = c;
-    //    }
-    //    public abstract void Enter();
-    //    public abstract void Exit();
-    //    public virtual void Update() { }
-    //    public virtual void UpdateRotation(ref Quaternion currentRotation, float deltaTime) { }
-    //    public virtual void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime) { }
-    //    public virtual void BeforeCharacterUpdate(float deltaTime) { }
-    //    public virtual void AfterCharacterUpdate(float deltaTime) { }
-    //    public virtual void PostGroundingUpdate(float deltaTime) { }
-    //    public virtual bool IsColliderValidForCollisions(Collider coll)
-    //    {
-    //        return true;
-    //    }
-    //    public virtual void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
-    //    {
-    //    }
-    //    public virtual void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
-    //    {
-    //    }
-    //    public virtual void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
-    //    {
-    //    }
-    //    public virtual void OnDiscreteCollisionDetected(Collider hitCollider)
-    //    {
-    //    }
-    //}
-
-    //public class SustainJump : SubState
-    //{
-    //    public SustainJump(PlayerCharacter c) : base(c)
-    //    {
-    //    }
-    //    public override void Enter() 
-    //    {
-    //        IsActive = true;
-    //        c._sustainJumpTimer = c.sustainJumpDuration;
-    //    }
-    //    public override void BeforeCharacterUpdate(float deltaTime)
-    //    {
-    //        if(!IsActive) return;
-
-    //        if  (c._isGrounded ||
-    //            !(c.isSustainJumpEnabled &&
-    //            !c._requestJump &&
-    //            c._inputReader.IsJumpHold &&
-    //            c._sustainJumpTimer > 0f)
-    //            )
-    //        {
-    //            Exit();
-    //        }
-    //    }
-    //    public override void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
-    //    {
-    //        if (!IsActive) return;
-    //        // Remove delta of gravity for sustain
-    //        currentVelocity -=  c.motor.CharacterUp * (c.gravity * deltaTime * (1f - c.sustainJumpGravity));
-    //        c._sustainJumpTimer -= deltaTime;
-    //    }
-    //    public override void Exit()
-    //    {
-    //        if (!IsActive) return;
-    //        IsActive = false;
-    //    }
-    //}
-
 }

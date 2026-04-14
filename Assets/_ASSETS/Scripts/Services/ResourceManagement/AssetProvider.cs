@@ -16,6 +16,7 @@ namespace ResourceManagement
         //{
         //    await Addressables.InitializeAsync().ToUniTask();
         //}
+
         /// <summary>
         /// Loads an asset asynchronously to memory and keeps track of it. If the asset is already loaded, it increases the user count and returns the existing asset.
         /// </summary>
@@ -48,7 +49,6 @@ namespace ResourceManagement
         {
             if (_loadedAssets.TryGetValue(assetReference, out var handle) && handle.IsDone)
             {
-                _loadedAssetsUsersCount[assetReference]++;
                 return (T)handle.Result;
             }
             Debug.LogWarning($"Asset with reference '{assetReference}' is not loaded or still loading.");

@@ -1,18 +1,21 @@
 ﻿using UnityEngine;
 
 namespace UnityUtils {
-    public static class Vector3Extensions {
+    public static class Vector3Extensions
+    {
         /// <summary>
         /// Sets any x y z values of a Vector3
         /// </summary>
-        public static Vector3 With(this Vector3 vector, float? x = null, float? y = null, float? z = null) {
+        public static Vector3 With(this Vector3 vector, float? x = null, float? y = null, float? z = null)
+        {
             return new Vector3(x ?? vector.x, y ?? vector.y, z ?? vector.z);
         }
 
         /// <summary>
         /// Adds to any x y z values of a Vector3
         /// </summary>
-        public static Vector3 Add(this Vector3 vector, float x = 0, float y = 0, float z = 0) {
+        public static Vector3 Add(this Vector3 vector, float x = 0, float y = 0, float z = 0)
+        {
             return new Vector3(vector.x + x, vector.y + y, vector.z + z);
         }
 
@@ -23,10 +26,11 @@ namespace UnityUtils {
         /// <param name="target">The Vector3 position to compare against</param>
         /// <param name="range">The range value to compare against</param>
         /// <returns>True if the current Vector3 is in the given range from the target Vector3, false otherwise</returns>
-        public static bool InRangeOf(this Vector3 current, Vector3 target, float range) {
+        public static bool InRangeOf(this Vector3 current, Vector3 target, float range)
+        {
             return (current - target).sqrMagnitude <= range * range;
         }
-        
+
         /// <summary>
         /// Divides two Vector3 objects component-wise.
         /// </summary>
@@ -44,22 +48,24 @@ namespace UnityUtils {
         /// <param name="v0">The Vector3 object that this method extends.</param>
         /// <param name="v1">The Vector3 object by which v0 is divided.</param>
         /// <returns>A new Vector3 object resulting from the component-wise division.</returns>
-        public static Vector3 ComponentDivide(this Vector3 v0, Vector3 v1){
-            return new Vector3( 
-                v1.x != 0 ? v0.x / v1.x : v0.x, 
-                v1.y != 0 ? v0.y / v1.y : v0.y, 
-                v1.z != 0 ? v0.z / v1.z : v0.z);  
+        public static Vector3 ComponentDivide(this Vector3 v0, Vector3 v1)
+        {
+            return new Vector3(
+                v1.x != 0 ? v0.x / v1.x : v0.x,
+                v1.y != 0 ? v0.y / v1.y : v0.y,
+                v1.z != 0 ? v0.z / v1.z : v0.z);
         }
-        
+
         /// <summary>
         /// Converts a Vector2 to a Vector3 with a y value of 0.
         /// </summary>
         /// <param name="v2">The Vector2 to convert.</param>
         /// <returns>A Vector3 with the x and z values of the Vector2 and a y value of 0.</returns>
-        public static Vector3 ToVector3(this Vector2 v2) {
+        public static Vector3 ToVector3(this Vector2 v2)
+        {
             return new Vector3(v2.x, 0, v2.y);
         }
-        
+
         /// <summary>
         /// Adds a random offset to the components of a <see cref="Vector3"/> within the specified range.
         /// </summary>
@@ -68,13 +74,14 @@ namespace UnityUtils {
         /// or subtracted to/from each component of the vector.</param>
         /// <returns>A new <see cref="Vector3"/> with random offsets applied to its X, Y, and Z components.
         /// Each offset is in the range [-<paramref name="range"/>, <paramref name="range"/>].</returns>
-        public static Vector3 RandomOffset(this Vector3 vector, float range) {
+        public static Vector3 RandomOffset(this Vector3 vector, float range)
+        {
             return vector + new Vector3(
                 Random.Range(-range, range),
                 Random.Range(-range, range),
                 Random.Range(-range, range)
             );
-        }        
+        }
 
         /// <summary>
         /// Computes a random point in an annulus (a ring-shaped area) based on minimum and 
@@ -84,20 +91,21 @@ namespace UnityUtils {
         /// <param name="minRadius">Minimum radius of the annulus.</param>
         /// <param name="maxRadius">Maximum radius of the annulus.</param>
         /// <returns>A random Vector3 point within the specified annulus.</returns>
-        public static Vector3 RandomPointInAnnulus(this Vector3 origin, float minRadius, float maxRadius) {
+        public static Vector3 RandomPointInAnnulus(this Vector3 origin, float minRadius, float maxRadius)
+        {
             float angle = Random.value * Mathf.PI * 2f;
             Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-    
+
             // Squaring and then square-rooting radii to ensure uniform distribution within the annulus
             float minRadiusSquared = minRadius * minRadius;
             float maxRadiusSquared = maxRadius * maxRadius;
             float distance = Mathf.Sqrt(Random.value * (maxRadiusSquared - minRadiusSquared) + minRadiusSquared);
-    
+
             // Converting the 2D direction vector to a 3D position vector
             Vector3 position = new Vector3(direction.x, 0, direction.y) * distance;
             return origin + position;
         }
-    
+
         /// <summary>
         /// Rounds the components of a Vector3 down to the nearest multiple of the given quantization step.
         /// This is useful for reducing precision or snapping positions to a grid,
@@ -106,7 +114,8 @@ namespace UnityUtils {
         /// <param name="quantization">The quantization step for each component (x, y, z).</param>
         /// <returns>A new Vector3 with each component rounded down to the nearest multiple of the corresponding quantization step.</returns>
         /// </summary>
-        public static Vector3 Quantize(this Vector3 position, Vector3 quantization) {
+        public static Vector3 Quantize(this Vector3 position, Vector3 quantization)
+        {
             return Vector3.Scale(
                 quantization,
                 new Vector3(
@@ -114,6 +123,20 @@ namespace UnityUtils {
                     Mathf.Floor(position.y / quantization.y),
                     Mathf.Floor(position.z / quantization.z)
                 ));
+        }
+        /// <summary>
+        /// If the angle between the vector and the target is less 
+        /// than or equal to the specified angle, returns true. 
+        /// Otherwise, returns false.
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <param name="target"></param>
+        /// <param name="angle"></param>
+        /// <returns></returns>
+        public static bool InAngle(this Vector3 vector, Vector3 target, float angle)
+        {
+            //return Vector3.Angle(vector, target) <= angle;
+            return Vector3.Dot(vector.normalized, target.normalized) >= Mathf.Cos(angle * Mathf.Deg2Rad);
         }
     }
 }
